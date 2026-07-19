@@ -1,0 +1,3435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMR Pending Analysis · Control Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onerror="this.dataset.failed=1; window.__loadFallback && window.__loadFallback('xlsx')"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js" onerror="this.dataset.failed=1; window.__loadFallback && window.__loadFallback('chart')"></script>
+<script>
+  // Fallback to a second CDN if cdnjs is unreachable, and surface a clear banner if both fail.
+  window.__loadFallback = function(which){
+    var srcs = {
+      xlsx: 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+      chart: 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js'
+    };
+    var s = document.createElement('script');
+    s.src = srcs[which];
+    s.onerror = function(){ window.__libFailed = window.__libFailed || []; window.__libFailed.push(which); window.__showLibBanner && window.__showLibBanner(); };
+    document.head.appendChild(s);
+  };
+</script>
+<style>
+:root{
+  --bg:#0a0e13;
+  --bg2:#0d131a;
+  --panel:#121a23;
+  --panel2:#172130;
+  --border:#22303f;
+  --border-soft:#1a2530;
+  --text:#e8eef4;
+  --text-dim:#8ea0b3;
+  --text-faint:#5c6f82;
+  --amber:#f0a942;
+  --amber-dim:#3a2c15;
+  --teal:#45d3c4;
+  --teal-dim:#123330;
+  --red:#ef6461;
+  --red-dim:#3a1a1a;
+  --green:#5fc98d;
+  --blue:#5b9dd9;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --radius:3px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+body{min-height:100vh;background-image:
+  linear-gradient(180deg, var(--bg2) 0%, var(--bg) 220px);
+}
+::selection{background:var(--amber);color:#1a1300;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;}
+::-webkit-scrollbar-thumb:hover{background:#2c3c4d;}
+
+a{color:var(--teal);}
+button{font-family:var(--sans);cursor:pointer;}
+input,select{font-family:var(--sans);}
+
+/* ---------- topbar ---------- */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 26px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,#0d1420,#0a0e13);
+  position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-mark{
+  width:38px;height:38px;border:1px solid var(--amber);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;color:var(--amber);
+  font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.5px;
+  background:var(--amber-dim);position:relative;
+}
+.brand-mark::after{
+  content:"";position:absolute;inset:-1px;border:1px solid var(--amber);border-radius:4px;opacity:.35;
+  animation:pulse 2.6s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.35;}50%{transform:scale(1.18);opacity:0;}}
+.brand-text .title{font-size:15px;font-weight:700;letter-spacing:.3px;}
+.brand-text .subtitle{font-size:11px;color:var(--text-dim);font-family:var(--mono);letter-spacing:.4px;margin-top:2px;}
+.topbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.global-search{display:flex;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:2px;}
+.global-search input{
+  background:transparent;border:none;color:var(--text);padding:7px 10px;font-size:12.5px;width:220px;font-family:var(--sans);
+}
+.global-search input:focus{outline:none;}
+.global-search input::placeholder{color:var(--text-faint);}
+.global-search .btn{padding:6px 10px;}
+
+.btn{
+  border:1px solid var(--border);background:var(--panel);color:var(--text);
+  padding:9px 15px;border-radius:var(--radius);font-size:12.5px;font-weight:600;
+  letter-spacing:.2px;display:inline-flex;align-items:center;gap:7px;transition:.15s;
+}
+.btn:hover{border-color:#38495c;background:var(--panel2);}
+.btn-amber{background:var(--amber);border-color:var(--amber);color:#1a1300;}
+.btn-amber:hover{background:#f5b862;}
+.btn-ghost{background:transparent;}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.btn-danger{color:var(--red);}
+.btn-danger:hover{border-color:var(--red);background:var(--red-dim);}
+input[type=file]{display:none;}
+
+/* ---------- snapshot rail ---------- */
+.snap-rail{
+  display:flex;gap:8px;align-items:center;padding:12px 26px;overflow-x:auto;
+  border-bottom:1px solid var(--border);background:var(--bg2);
+}
+.snap-rail .rail-label{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;margin-right:4px;}
+.snap-chip{
+  display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius);padding:6px 8px 6px 12px;white-space:nowrap;flex-shrink:0;
+}
+.snap-chip .name{font-size:12px;font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.snap-chip .count{font-family:var(--mono);font-size:10.5px;color:var(--teal);}
+.snap-chip .date-time-group{display:flex;gap:2px;}
+.snap-chip input[type=date],.snap-chip input[type=time]{
+  background:var(--bg2);border:1px solid var(--border-soft);color:var(--text-dim);border-radius:2px;
+  font-family:var(--mono);font-size:11px;padding:2px 4px;
+}
+.snap-chip input[type=time]{width:80px;}
+.snap-chip .x{color:var(--text-faint);border:none;background:none;font-size:15px;padding:0 2px;}
+.snap-chip .x:hover{color:var(--red);}
+.role-badge{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:2px;}
+.role-badge.cur{background:var(--amber-dim);color:var(--amber);}
+.role-badge.ref{background:#12233a;color:var(--blue);}
+.mini-role{background:none;border:1px solid var(--border-soft);color:var(--text-faint);font-size:9.5px;font-family:var(--mono);padding:3px 6px;border-radius:2px;white-space:nowrap;}
+.mini-role:hover{color:var(--text);border-color:#38495c;}
+.empty-rail{font-size:12px;color:var(--text-faint);font-style:italic;}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:2px;padding:0 26px;border-bottom:1px solid var(--border);background:var(--bg);overflow-x:auto;}
+.tab-btn{
+  background:none;border:none;color:var(--text-dim);padding:13px 16px;font-size:12.5px;font-weight:600;
+  letter-spacing:.3px;border-bottom:2px solid transparent;white-space:nowrap;
+}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--amber);border-bottom-color:var(--amber);}
+
+/* ---------- filter bar ---------- */
+.filterbar{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 26px;
+  background:var(--panel);border-bottom:1px solid var(--border);
+}
+.filter-group{display:flex;flex-direction:column;gap:4px;}
+.filter-group label{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-faint);font-family:var(--mono);}
+.msel{position:relative;}
+.msel-btn{
+  background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);
+  padding:7px 12px;font-size:12px;min-width:150px;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;
+}
+.msel-btn:hover{border-color:#38495c;}
+.msel-btn .n{color:var(--amber);font-family:var(--mono);}
+.msel-pop{
+  position:absolute;top:calc(100% + 4px);left:0;background:#0f1620;border:1px solid var(--border);border-radius:var(--radius);
+  min-width:220px;max-height:280px;overflow-y:auto;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.5);padding:6px;display:none;
+}
+.msel.open .msel-pop{display:block;}
+.msel-search{width:100%;background:var(--bg2);border:1px solid var(--border-soft);color:var(--text);padding:6px 8px;font-size:11.5px;border-radius:2px;margin-bottom:6px;}
+.msel-opt{display:flex;align-items:center;gap:8px;padding:5px 6px;font-size:12px;border-radius:2px;}
+.msel-opt:hover{background:var(--panel2);}
+.msel-opt input{accent-color:var(--amber);}
+.msel-actions{display:flex;justify-content:space-between;padding:4px 6px 2px;border-top:1px solid var(--border-soft);margin-top:4px;}
+.msel-actions button{background:none;border:none;color:var(--teal);font-size:10.5px;font-family:var(--mono);}
+.txt-input{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:7px 12px;font-size:12px;min-width:150px;}
+.filter-spacer{flex:1;}
+.filter-summary{font-family:var(--mono);font-size:11px;color:var(--text-dim);}
+.filter-summary b{color:var(--amber);}
+
+/* ---------- main ---------- */
+main{padding:22px 26px 60px;max-width:1600px;margin:0 auto;}
+.panel{display:none;}
+.panel.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-faint);font-family:var(--mono);margin:26px 0 12px;display:flex;align-items:center;gap:10px;}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border);}
+.section-title:first-child{margin-top:0;}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;}
+.kpi{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;
+}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent-color,var(--teal));}
+.kpi .label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-faint);font-family:var(--mono);}
+.kpi .value{font-size:28px;font-weight:700;font-family:var(--mono);margin-top:6px;color:var(--text);}
+.kpi .sub{font-size:11px;color:var(--text-dim);margin-top:4px;}
+.kpi.amber{--accent-color:var(--amber);}
+.kpi.amber .value{color:var(--amber);}
+.kpi.red{--accent-color:var(--red);}
+.kpi.red .value{color:var(--red);}
+.kpi.green{--accent-color:var(--green);}
+.kpi.green .value{color:var(--green);}
+.kpi-grid.mini{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;align-content:start;}
+.kpi-grid.mini .kpi{padding:9px 11px;cursor:pointer;transition:.12s;}
+.kpi-grid.mini .kpi:hover{border-color:#38495c;background:var(--panel2);}
+.kpi-grid.mini .kpi .label{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kpi-grid.mini .kpi .value{font-size:18px;margin-top:3px;}
+
+.stat-tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.stat-tile{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:.12s;}
+.stat-tile:hover{border-color:#38495c;background:var(--panel2);}
+.stat-tile .label{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-faint);font-family:var(--mono);}
+.stat-tile .value{font-size:22px;font-weight:700;font-family:var(--mono);margin-top:4px;}
+.stat-tile.new .value{color:var(--red);}
+.stat-tile.cleared .value{color:var(--green);}
+.stat-tile.moved .value{color:var(--amber);}
+.stat-tile.unchanged .value{color:var(--text-dim);}
+
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:1000px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.card h3{margin:0 0 4px;font-size:13px;font-weight:600;}
+.card .card-sub{font-size:11px;color:var(--text-faint);margin-bottom:14px;font-family:var(--mono);}
+.chart-wrap{position:relative;height:280px;}
+.chart-wrap.tall{height:360px;}
+.chart-wrap.mini{height:110px;}
+.chart-wrap.small{height:150px;}
+
+/* ---------- tables ---------- */
+.table-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.table-scroll{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);max-height:640px;}
+table{border-collapse:collapse;width:100%;font-size:12px;}
+thead th{
+  position:sticky;top:0;background:#101823;text-align:left;padding:9px 12px;font-family:var(--mono);
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);border-bottom:1px solid var(--border);
+  cursor:pointer;white-space:nowrap;z-index:5;
+}
+thead th:hover{color:var(--amber);}
+thead th.sorted{color:var(--amber);}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--border-soft);white-space:nowrap;color:var(--text);}
+tbody tr:hover{background:var(--panel2);}
+tbody tr:nth-child(even){background:rgba(255,255,255,.012);}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-family:var(--mono);font-weight:600;letter-spacing:.2px;}
+.badge.scrap{background:var(--red-dim);color:var(--red);}
+.badge.ok{background:var(--teal-dim);color:var(--teal);}
+.badge.neutral{background:#20293380;color:var(--text-dim);}
+.pager{display:flex;align-items:center;gap:10px;margin-top:10px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
+.pager button{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:2px;padding:5px 10px;}
+.pager button:disabled{opacity:.35;cursor:default;}
+
+.empty-state{
+  text-align:center;padding:80px 20px;color:var(--text-faint);border:1px dashed var(--border);border-radius:var(--radius);
+}
+.empty-state .big{font-size:38px;margin-bottom:10px;opacity:.5;}
+.empty-state h3{color:var(--text-dim);font-weight:600;margin:0 0 6px;}
+.empty-state p{font-size:12.5px;max-width:420px;margin:0 auto;line-height:1.6;}
+
+/* upload dropzone */
+.dropzone{
+  border:1.5px dashed var(--border);border-radius:6px;padding:46px 20px;text-align:center;cursor:pointer;transition:.15s;
+  background:var(--panel);
+}
+.dropzone:hover,.dropzone.drag{border-color:var(--amber);background:var(--amber-dim);}
+.dropzone .ic{font-size:30px;margin-bottom:10px;}
+.dropzone h3{margin:0 0 6px;font-size:14px;}
+.dropzone p{margin:0;color:var(--text-dim);font-size:12px;}
+
+/* column manager */
+.col-manager{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.col-list{max-height:520px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);}
+.col-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
+.col-row:hover{background:var(--panel2);}
+.col-row .nm{flex:1;font-family:var(--mono);}
+.col-row input[type=checkbox]{accent-color:var(--teal);}
+.add-col-row{display:flex;gap:8px;margin-bottom:12px;}
+.tag{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--border);padding:4px 9px;border-radius:12px;font-size:11px;}
+.chip-list{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--border);
+  padding:5px 6px 5px 11px;border-radius:14px;font-size:11.5px;cursor:pointer;transition:.12s;max-width:100%;
+}
+.chip:hover{border-color:#38495c;background:var(--panel2);}
+.chip .chip-name{font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;}
+.chip .chip-count{font-family:var(--mono);font-weight:700;background:var(--panel);border-radius:10px;padding:1px 8px;color:var(--text-dim);}
+.chip.flag .chip-count{background:var(--amber-dim);color:var(--amber);}
+.chip.pending{border-color:var(--red);}
+.chip.pending .chip-count{background:var(--red-dim);color:var(--red);}
+
+.alert-banner{
+  display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:var(--radius);border:1px solid;
+  margin:14px 0 4px;font-size:13px;
+}
+.alert-banner .ic{font-size:20px;flex:none;}
+.alert-banner .txt{flex:1;line-height:1.6;}
+.alert-banner .txt b{font-weight:700;}
+.alert-banner button{flex:none;}
+.alert-banner.red{background:var(--red-dim);border-color:var(--red);color:#ffd9d6;}
+.alert-banner.green{background:var(--teal-dim);border-color:var(--teal);color:#d3fff8;}
+.alert-banner.neutral{background:var(--panel2);border-color:var(--border);color:var(--text-dim);}
+.chip.toggle{opacity:.45;}
+.chip.toggle.on{opacity:1;border-color:var(--teal);background:var(--teal-dim);}
+.chip.toggle.on .chip-count{background:#0d2b28;color:var(--teal);}
+
+.log-list{list-style:none;padding:0;margin:0;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);max-height:200px;overflow-y:auto;}
+.log-list li{padding:5px 0;border-bottom:1px solid var(--border-soft);}
+.log-list li b{color:var(--teal);}
+
+.footer-note{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-faint);font-family:var(--mono);text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">DMR</div>
+    <div class="brand-text">
+      <div class="title">Pending DMR Control Deck</div>
+      <div class="subtitle">defect movement &amp; station analytics</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <div class="global-search">
+      <input type="text" id="globalSearchInput" placeholder="Search DMR ID, PN, or Customer…">
+      <button class="btn btn-sm btn-ghost" id="globalSearchBtn">🔍</button>
+    </div>
+    <label class="btn btn-ghost" for="fileInput">＋ Add report(s)</label>
+    <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" multiple>
+    <button class="btn btn-amber" id="exportCleanBtn">⇩ Export cleaned data</button>
+    <button class="btn btn-ghost" id="exportCleanCsvBtn" title="Plain CSV — much faster than Excel format for very large exports (150k+ rows), since it skips all the cell/formatting overhead">⇩ CSV (faster, 250k+ rows)</button>
+    <button class="btn btn-ghost" id="exportCleanXlsbBtn" title="Binary Excel format — noticeably smaller file than .xlsx for large exports. Note: some systems don't have a file association for .xlsb and may offer to 'extract' it like a zip instead of opening it in Excel — if that happens, open it from within Excel (File → Open) instead of double-clicking it.">⇩ XLSB (smaller file)</button>
+  </div>
+</div>
+
+<div id="libBanner" style="display:none;background:var(--red-dim);color:var(--red);border-bottom:1px solid var(--red);padding:10px 26px;font-size:12.5px;font-family:var(--mono);">
+  ⚠ Required libraries failed to load from the CDN, so uploads won't work. This is usually a network/firewall block. Try a different network, or reload this page. <button class="btn btn-sm btn-ghost" style="margin-left:8px;" onclick="location.reload()">Reload</button>
+</div>
+<div id="uploadOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,14,19,.72);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+  <div style="width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;"></div>
+  <div style="font-family:var(--mono);font-size:12px;color:var(--text-dim);" id="uploadOverlayText">Reading file…</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+
+<div id="drillModal" class="drill-overlay" style="display:none;">
+  <div class="drill-panel">
+    <div class="drill-head">
+      <div>
+        <div class="drill-title" id="drillTitle">Detail</div>
+        <div class="drill-sub" id="drillSub"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="txt-input" id="drillSearch" placeholder="Search within this view…" style="min-width:200px;display:none;">
+        <button class="btn btn-sm btn-ghost" id="drillExportBtn">⇩ Export</button>
+        <button class="btn btn-sm btn-ghost" id="drillCloseBtn">✕ Close</button>
+      </div>
+    </div>
+    <div class="drill-body">
+      <div class="table-scroll" style="max-height:60vh;">
+        <table id="drillTable"></table>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.drill-overlay{position:fixed;inset:0;background:rgba(6,9,13,.78);z-index:300;display:flex;align-items:flex-start;justify-content:center;padding:5vh 20px;}
+.drill-panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;width:100%;max-width:1200px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.drill-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.drill-title{font-size:14px;font-weight:700;}
+.drill-sub{font-size:11.5px;color:var(--text-dim);font-family:var(--mono);margin-top:4px;}
+.drill-body{padding:16px 20px;overflow:auto;}
+.clickable-row{cursor:pointer;}
+.clickable-row:hover{background:var(--panel2) !important;}
+.dmr-link{color:var(--teal);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;}
+.dmr-link:hover{color:#7be9dc;}
+canvas.clickable{cursor:pointer;}
+</style>
+
+<div id="printSummary" class="print-only"></div>
+<style>
+.print-only{display:none;}
+@media print{
+  body *{visibility:hidden;}
+  #printSummary, #printSummary *{visibility:visible;}
+  #printSummary{display:block !important;position:absolute;left:0;top:0;width:100%;padding:20px;background:#fff;color:#111;font-family:var(--sans);}
+  .psum-h1{font-size:20px;font-weight:700;margin:0 0 2px;}
+  .psum-meta{font-size:11px;color:#555;font-family:var(--mono);margin-bottom:16px;}
+  .psum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+  .psum-kpi{border:1px solid #ccc;border-radius:4px;padding:8px 10px;}
+  .psum-kpi .l{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#666;}
+  .psum-kpi .v{font-size:18px;font-weight:700;margin-top:2px;}
+  .psum-h2{font-size:13px;font-weight:700;margin:18px 0 8px;border-bottom:1px solid #ccc;padding-bottom:4px;}
+  .psum-imgs{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .psum-imgs img{width:100%;border:1px solid #ddd;}
+  .psum-table{width:100%;border-collapse:collapse;font-size:10.5px;}
+  .psum-table th,.psum-table td{border:1px solid #ddd;padding:4px 6px;text-align:left;}
+  .psum-alert{border:1px solid #999;border-radius:4px;padding:8px 10px;margin-bottom:14px;font-size:11.5px;}
+}
+</style>
+
+<div class="snap-rail" id="snapRail">
+  <span class="rail-label">Reports loaded</span>
+  <span class="empty-rail">No reports uploaded yet — add one or more Excel exports to begin.</span>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="overview">Overview</button>
+  <button class="tab-btn" data-tab="transitions">Station Movement</button>
+  <button class="tab-btn" data-tab="pnsummary">Defect PN Summary</button>
+  <button class="tab-btn" data-tab="customer">Customer Performance</button>
+  <button class="tab-btn" data-tab="aging">Aging &amp; Stuck Units</button>
+  <button class="tab-btn" data-tab="backlog">Backlog Tracker</button>
+  <button class="tab-btn" data-tab="datatable">Data Table</button>
+  <button class="tab-btn" data-tab="quality">Data Quality</button>
+  <button class="tab-btn" data-tab="columns">Columns</button>
+</div>
+
+<div class="filterbar" id="filterbar" style="display:none;">
+  <div class="filter-group">
+    <label>Customer</label>
+    <div class="msel" id="msel-customer"><button class="msel-btn"><span class="lbl">All</span><span class="n"></span></button><div class="msel-pop"></div></div>
+  </div>
+  <div class="filter-group">
+    <label>Cur Station</label>
+    <div class="msel" id="msel-station"><button class="msel-btn"><span class="lbl">All</span><span class="n"></span></button><div class="msel-pop"></div></div>
+  </div>
+  <div class="filter-group">
+    <label>Final Disposition</label>
+    <div class="msel" id="msel-disposition"><button class="msel-btn"><span class="lbl">All</span><span class="n"></span></button><div class="msel-pop"></div></div>
+  </div>
+  <div class="filter-group">
+    <label>Model</label>
+    <div class="msel" id="msel-model"><button class="msel-btn"><span class="lbl">All</span><span class="n"></span></button><div class="msel-pop"></div></div>
+  </div>
+  <div class="filter-group">
+    <label>Defect PN contains</label>
+    <input class="txt-input" id="filterDefectPN" placeholder="e.g. 45AB^12">
+  </div>
+  <div class="filter-group">
+    <label style="color:var(--amber);">● Current report</label>
+    <select class="txt-input" id="currentSnapshotSelect" style="border-color:var(--amber);"></select>
+  </div>
+  <button class="btn btn-sm btn-ghost" id="swapCompareBtn" title="Swap current and reference" style="align-self:flex-end;margin-bottom:1px;">⇄ swap</button>
+  <div class="filter-group">
+    <label style="color:var(--blue);">● Reference report</label>
+    <select class="txt-input" id="referenceSnapshotSelect" style="border-color:var(--blue);"></select>
+  </div>
+  <div class="filter-spacer"></div>
+  <button class="btn btn-sm btn-ghost" id="clearFiltersBtn">Clear filters</button>
+  <div class="filter-summary" id="filterSummary"></div>
+</div>
+
+<div class="compare-note" id="compareNote" style="display:none;padding:8px 26px;background:var(--bg2);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11.5px;color:var(--text-dim);"></div>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+    <div id="overviewEmpty"></div>
+    <div id="overviewContent" style="display:none;">
+      <div class="section-title" style="display:flex;align-items:center;">
+        <span>Fleet snapshot</span>
+        <span style="flex:1;height:1px;background:var(--border);margin:0 10px;"></span>
+        <button class="btn btn-sm btn-ghost" id="printSummaryBtn" style="flex:none;">🖨 Print summary</button>
+        <button class="btn btn-sm btn-ghost" id="exportOverviewBtn" style="flex:none;">⇩ Export current view (.xlsx)</button>
+      </div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+
+      <div id="backlogAlertBanner" style="display:none;"></div>
+
+      <div class="section-title">Trend across uploaded reports</div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Total pending DMRs per report</h3>
+          <div class="card-sub">one point per uploaded snapshot, ordered by report date — click a point to drill in</div>
+          <div class="chart-wrap mini"><canvas id="chartTrend"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>New vs. cleared vs. moved vs. unchanged</h3>
+          <div class="card-sub">reference report → current report (pick both above) — click a tile for the records</div>
+          <div class="stat-tiles" id="changeStatTiles"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Requests raised over time</div>
+      <div class="card">
+        <div class="table-toolbar" style="margin-bottom:0;">
+          <div>
+            <h3 style="margin-bottom:2px;">Request ID Date — weekly volume</h3>
+            <div class="card-sub">by week (time-of-day stripped), current report, filters applied — click a week to drill in</div>
+          </div>
+          <span style="flex:1;"></span>
+          <button class="btn btn-sm btn-ghost" id="exportRequestDateBtn" style="flex:none;">⇩ Download whole data (.xlsx)</button>
+        </div>
+        <div class="chart-wrap" style="margin-top:10px;"><canvas id="chartRequestDate"></canvas></div>
+      </div>
+
+      <div class="section-title">Where units sit right now</div>
+      <div class="grid3">
+        <div class="card">
+          <h3>DMRs by current station</h3>
+          <div class="card-sub">top 12, current report, filters applied</div>
+          <div class="chart-wrap"><canvas id="chartByStation"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Top defect part numbers</h3>
+          <div class="card-sub">cleaned Defect PN, filters applied</div>
+          <div class="chart-wrap"><canvas id="chartTopPN"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Every station — complete list</h3>
+          <div class="card-sub">not capped at 12; click any station to drill in</div>
+          <div class="kpi-grid mini" id="stationKpiGrid" style="max-height:280px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <div class="section-title" style="display:flex;align-items:center;gap:10px;">
+        <span>Final Disposition</span>
+        <span style="flex:1;height:1px;background:var(--border);"></span>
+        <select class="txt-input" id="dispositionSelect" style="min-width:220px;"></select>
+      </div>
+
+      <div class="section-title">Processing log</div>
+      <div class="card">
+        <ul class="log-list" id="processLog"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSITIONS -->
+  <div class="panel" id="panel-transitions">
+    <div id="transitionsEmpty"></div>
+    <div id="transitionsContent" style="display:none;">
+      <div class="section-title">Station-to-station movement</div>
+      <p style="color:var(--text-dim);font-size:12.5px;max-width:800px;">
+        Compares every DMR ID that appears in both the <b style="color:var(--blue)">reference report</b> and the
+        <b style="color:var(--amber)">current report</b> (pick both at the top of the page) and shows how each unit's
+        <b>Cur Station</b> changed between the two. Requires at least two uploaded reports.
+      </p>
+      <div class="card" id="compareBanner" style="margin:14px 0;padding:14px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;"></div>
+      <div class="kpi-grid" id="compareKpis" style="margin-bottom:6px;"></div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Transition matrix</h3>
+        <div class="card-sub">rows = from station, columns = to station, cell = unit count</div>
+        <div class="table-scroll" style="max-height:440px;">
+          <table id="transitionMatrix"></table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <h3>Busiest transitions</h3>
+        <div class="card-sub">largest movements between any two stations</div>
+        <div class="chart-wrap tall" style="height:420px;"><canvas id="chartTopTransitions"></canvas></div>
+      </div>
+      <div class="section-title">DMR movement log</div>
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="txt-input" id="movementSearch" placeholder="Search DMR ID / PN / Customer…" style="min-width:260px;">
+        </div>
+        <div class="table-scroll">
+          <table id="movementTable"></table>
+        </div>
+        <div class="pager" id="movementPager"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PN SUMMARY -->
+  <div class="panel" id="panel-pnsummary">
+    <div id="pnEmpty"></div>
+    <div id="pnContent" style="display:none;">
+      <div class="section-title">Defect PN × Current station</div>
+      <p style="color:var(--text-dim);font-size:12.5px;">Quantity of units for each cleaned Defect PN, broken out by current station. Filters and snapshot selection apply.</p>
+      <div class="card" style="margin-top:14px;">
+        <div class="table-toolbar">
+          <input class="txt-input" id="pnSearch" placeholder="Search Defect PN…" style="min-width:220px;">
+          <span style="flex:1;"></span>
+          <button class="btn btn-sm btn-ghost" id="exportPnBtn">⇩ Export table (.xlsx)</button>
+        </div>
+        <div class="table-scroll">
+          <table id="pnPivotTable"></table>
+        </div>
+      </div>
+
+      <div class="section-title">Defect PN × Return Type</div>
+      <p style="color:var(--text-dim);font-size:12.5px;">Which return reasons are driving each part, current report, filters applied.</p>
+      <div class="card" style="margin-top:14px;">
+        <div class="table-toolbar">
+          <input class="txt-input" id="pnRtSearch" placeholder="Search Defect PN…" style="min-width:220px;">
+          <span style="flex:1;"></span>
+          <button class="btn btn-sm btn-ghost" id="exportPnRtBtn">⇩ Export table (.xlsx)</button>
+        </div>
+        <div class="table-scroll">
+          <table id="pnReturnTypeTable"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER -->
+  <div class="panel" id="panel-customer">
+    <div id="custEmpty"></div>
+    <div id="custContent" style="display:none;">
+      <div class="section-title">Customer performance</div>
+      <div class="grid2">
+        <div class="card">
+          <h3>DMR volume by customer</h3>
+          <div class="card-sub">latest snapshot in view, filters applied</div>
+          <div class="chart-wrap tall"><canvas id="chartCustomerVolume"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Pending-scrap share by customer</h3>
+          <div class="card-sub">% of each customer's units currently flagged PendingScrap</div>
+          <div class="chart-wrap tall"><canvas id="chartCustomerScrap"></canvas></div>
+        </div>
+      </div>
+      <div class="section-title">Customer detail table</div>
+      <div class="card">
+        <div class="table-toolbar">
+          <span class="filter-summary" id="custTableNote"></span>
+          <span style="flex:1;"></span>
+          <button class="btn btn-sm btn-ghost" id="exportCustBtn">⇩ Export table (.xlsx)</button>
+        </div>
+        <div class="table-scroll">
+          <table id="customerTable"></table>
+        </div>
+      </div>
+
+      <div class="section-title">Return Type by customer</div>
+      <div class="card">
+        <div class="card-sub">unit counts by Return Type for each customer, current report, filters applied — click a cell to drill in</div>
+        <div class="table-scroll" style="max-height:420px;margin-top:10px;">
+          <table id="custReturnTypeTable"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGING -->
+  <div class="panel" id="panel-aging">
+    <div id="agingEmpty"></div>
+    <div id="agingContent" style="display:none;">
+      <div class="section-title">Aging distribution</div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Days-in-system buckets</h3>
+          <div class="card-sub" id="agingFieldNote">based on Req Aging, current report, filters applied</div>
+          <div class="chart-wrap"><canvas id="chartAging"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Oldest open units by customer</h3>
+          <div class="card-sub">average aging, top 12 customers by volume</div>
+          <div class="chart-wrap"><canvas id="chartAgingByCustomer"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-title">Stuck units</div>
+      <div class="card">
+        <div class="table-toolbar">
+          <label style="font-size:11px;color:var(--text-faint);font-family:var(--mono);">Aging field</label>
+          <select class="txt-input" id="agingFieldSelect" style="min-width:140px;">
+            <option value="Req Aging">Req Aging</option>
+            <option value="PJ Aging">PJ Aging</option>
+          </select>
+          <label style="font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-left:10px;">Flag units older than</label>
+          <input type="number" class="txt-input" id="agingThreshold" value="30" style="width:90px;">
+          <span style="font-size:11px;color:var(--text-faint);">days</span>
+          <span style="flex:1;"></span>
+          <span class="filter-summary" id="stuckCount"></span>
+        </div>
+        <p style="color:var(--text-dim);font-size:12px;margin:0 0 10px;">Click any row to dig into that DMR's full history across every uploaded report.</p>
+        <div class="table-scroll">
+          <table id="stuckTable"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BACKLOG TRACKER -->
+  <div class="panel" id="panel-backlog">
+    <div id="backlogEmpty"></div>
+    <div id="backlogContent" style="display:none;">
+      <div class="section-title">Pipeline stage mapping</div>
+      <p style="color:var(--text-dim);font-size:12.5px;max-width:820px;">
+        Tell the tracker which <b>Cur Station</b> values mean what. Defaults match the stations you described; adjust
+        if your data uses different spellings. The Customer and Defect PN filters at the top of the page apply to
+        everything on this tab too.
+      </p>
+      <div class="card" style="margin-top:14px;">
+        <div class="grid3">
+          <div>
+            <h3 style="font-size:12.5px;">① Not yet started (backlog)</h3>
+            <div class="chip-list" id="cfgNotStarted" style="margin-top:8px;"></div>
+          </div>
+          <div>
+            <h3 style="font-size:12.5px;">② QA Released / Received</h3>
+            <div class="chip-list" id="cfgReleased" style="margin-top:8px;"></div>
+          </div>
+          <div>
+            <h3 style="font-size:12.5px;">③ RMA Requested</h3>
+            <div class="chip-list" id="cfgRequested" style="margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;align-items:center;gap:10px;padding:12px 16px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;">
+          <input type="checkbox" id="includeWeekendsToggle" style="accent-color:var(--teal);">
+          Include weekends in pace &amp; target-date calculations
+        </label>
+        <span style="color:var(--text-faint);font-size:11.5px;">off = 5-day work week assumed (default)</span>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
+        <h3 style="font-size:12.5px;">Two ways to measure pace — pick which one drives the projections</h3>
+        <p style="color:var(--text-dim);font-size:12px;line-height:1.7;margin:6px 0 12px;max-width:820px;">
+          <b style="color:var(--text)">Last 30 days</b> is a <i>rolling window</i> — it always measures "today minus 30 days" through today, so it
+          shifts forward every time you open the dashboard and reflects recent performance only.
+          <b style="color:var(--text)">Full history</b> is a <i>fixed window</i> — it averages across every uploaded report from the first to the
+          most recent, so one slow or fast stretch gets blended in with everything else. Both are shown below for every rate;
+          use this to choose which one the backlog projections (days-to-clear, target-date pace) are based on.
+        </p>
+        <div style="display:flex;gap:18px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer;">
+            <input type="radio" name="rateBasis" value="rolling" id="rateBasisRolling" style="accent-color:var(--teal);"> Last 30 days (rolling)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer;">
+            <input type="radio" name="rateBasis" value="full" id="rateBasisFull" style="accent-color:var(--teal);"> Full history (fixed)
+          </label>
+        </div>
+      </div>
+
+      <div class="section-title">Current pipeline</div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Where every unit sits, by stage</h3>
+          <div class="card-sub">current report, filters applied — click a bar to drill in</div>
+          <div class="chart-wrap"><canvas id="chartFunnel"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Pipeline stages over time</h3>
+          <div class="card-sub">stage mix across every uploaded report — click a segment to drill in</div>
+          <div class="chart-wrap"><canvas id="chartPipelineTrend"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-title">① → ② QA Release backlog</div>
+      <div class="kpi-grid" id="releaseKpis"></div>
+      <div class="grid2" style="margin-top:14px;">
+        <div class="card">
+          <h3>Backlog trend &amp; projection</h3>
+          <div class="card-sub">solid = actual backlog per report · amber dashed = projected (net flow: release − creation) · gray band = plausible range from throughput variance (needs 3+ reports) — click an actual point to drill in</div>
+          <div class="chart-wrap"><canvas id="chartReleaseTrend"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Target date for QA Release backlog</h3>
+          <div class="card-sub">how fast we'd need to release to hit a date</div>
+          <div style="display:flex;align-items:center;gap:10px;margin:14px 0 18px;">
+            <label style="font-size:11px;color:var(--text-faint);font-family:var(--mono);">Target date</label>
+            <input type="date" class="txt-input" id="releaseTargetDate">
+          </div>
+          <div id="releaseTargetResult" style="font-size:13px;line-height:1.9;"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Cycle time — Created → QA Released</div>
+      <p style="color:var(--text-dim);font-size:12.5px;max-width:820px;">
+        For every DMR we actually observed transition into a QA Released/Received station, this measures the days from
+        its DMRCreate Date to the report on which we caught that transition. Only DMRs with a caught transition count —
+        upload more reports for a fuller picture.
+      </p>
+      <div class="grid2" style="margin-top:14px;">
+        <div class="card">
+          <h3>Lead time distribution</h3>
+          <div class="card-sub">days from creation to QA Release — click a bucket to drill in</div>
+          <div class="chart-wrap"><canvas id="chartCycleTime"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Summary</h3>
+          <div class="kpi-grid" id="cycleTimeKpis"></div>
+        </div>
+      </div>
+
+      <div class="section-title">② → ③ RMA Requesting backlog</div>
+      <div class="kpi-grid" id="requestKpis"></div>
+      <div class="grid2" style="margin-top:14px;">
+        <div class="card">
+          <h3>Backlog trend &amp; projection</h3>
+          <div class="card-sub">solid = actual backlog per report · amber dashed = projected (net flow: request − release) · gray band = plausible range from throughput variance (needs 3+ reports) — click an actual point to drill in</div>
+          <div class="chart-wrap"><canvas id="chartRequestTrend"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Target date for Requesting backlog</h3>
+          <div class="card-sub">how fast we'd need to request to hit a date</div>
+          <div style="display:flex;align-items:center;gap:10px;margin:14px 0 18px;">
+            <label style="font-size:11px;color:var(--text-faint);font-family:var(--mono);">Target date</label>
+            <input type="date" class="txt-input" id="requestTargetDate">
+          </div>
+          <div id="requestTargetResult" style="font-size:13px;line-height:1.9;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="panel" id="panel-datatable">
+    <div id="dtEmpty"></div>
+    <div id="dtContent" style="display:none;">
+      <div class="section-title">Cleaned data</div>
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="txt-input" id="dtSearch" placeholder="Search across all visible columns…" style="min-width:260px;">
+          <span class="filter-summary" id="dtCount"></span>
+          <span style="flex:1;"></span>
+          <button class="btn btn-sm btn-ghost" id="exportDtBtn">⇩ Export view (.xlsx)</button>
+        </div>
+        <div class="table-scroll">
+          <table id="dataTable"></table>
+        </div>
+        <div class="pager" id="dtPager"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA QUALITY -->
+  <div class="panel" id="panel-quality">
+    <div id="qualityEmpty"></div>
+    <div id="qualityContent" style="display:none;">
+      <div class="section-title">Data quality by report</div>
+      <p style="color:var(--text-dim);font-size:12.5px;max-width:800px;">
+        Sanity-check each uploaded report before trusting the numbers: how complete the key fields are, and whether
+        any DMR ID appears more than once within the same file (it should always be unique).
+      </p>
+      <div class="card" style="margin-top:14px;">
+        <div class="table-scroll">
+          <table id="qualitySummaryTable"></table>
+        </div>
+      </div>
+
+      <div class="section-title">Blank values by column</div>
+      <div class="card">
+        <div class="table-toolbar">
+          <label style="font-size:11px;color:var(--text-faint);font-family:var(--mono);">Report</label>
+          <select class="txt-input" id="qualityReportSelect" style="min-width:220px;"></select>
+        </div>
+        <div class="chart-wrap tall" style="margin-top:10px;"><canvas id="chartBlanks"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMNS -->
+  <div class="panel" id="panel-columns">
+    <div class="section-title">Manage columns</div>
+    <p style="color:var(--text-dim);font-size:12.5px;max-width:760px;">
+      Columns are detected automatically from row 2 of each uploaded report. Uncheck a column to hide it from the
+      Data Table and filters without deleting the underlying data, or delete it to remove it permanently from this
+      dashboard's schema. Add a custom column name below to reserve a slot for a header your future reports may include.
+    </p>
+    <div class="col-manager" style="margin-top:16px;">
+      <div class="card">
+        <h3>Add column</h3>
+        <div class="add-col-row" style="margin-top:12px;">
+          <input class="txt-input" id="newColName" placeholder="e.g. Notes" style="flex:1;">
+          <button class="btn btn-sm btn-amber" id="addColBtn">Add</button>
+        </div>
+        <h3 style="margin-top:20px;">Core fields used by this dashboard</h3>
+        <p style="color:var(--text-faint);font-size:11.5px;line-height:1.7;">
+          <span class="tag">DMR ID</span> <span class="tag">Customer</span> <span class="tag">Defect PN</span>
+          <span class="tag">Cur Station</span> <span class="tag">Final Disposition</span> <span class="tag">Request ID</span>
+          <span class="tag">Model</span>
+          — these names must match your file's header row for the cleaning and analysis logic to work.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Detected / configured columns (<span id="colCount">0</span>)</h3>
+        <div class="col-list" id="colList" style="margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">Everything runs locally in your browser — files are parsed client-side and never uploaded anywhere.</div>
+</main>
+
+<script>
+/* =========================================================================
+   STATE
+   ========================================================================= */
+const CORE_FIELDS = {
+  id:'DMR ID', customer:'Customer', defectPN:'Defect PN', curStation:'Cur Station',
+  finalDisposition:'Final Disposition', requestId:'Request ID', model:'Model',
+  createDate:'DMRCreate Date', reqAging:'Req Aging', pjAging:'PJ Aging', failure:'Failure',
+  returnType:'Return Type', requestIdDate:'Request ID Date'
+};
+
+const DEFAULT_HEADERS = ["DMR ID","DMRCreate Date","DMRCreate Time","Rack PN","Rack ID","Customer","Model","UUT Type",
+"UUT PN","UUT SN","Rack Location","Defect PN","Defect SN","Qty","Comp Part Type","Repair Conclusion","Cancel Reason",
+"PJ Location","Issue PN","Replaced SN","QWMS Loc","Operator","Line","Opened By","Return Type","Test Station","Failure",
+"Comments","SAP Doc In","Cur Station","QAReceived Emp ID","QAReceived Date","QAReceived Time","QAReceived Date Time",
+"RRStatus","Retest Status","Storage","Cur Status","Final Disposition","Vendor RMA","Finish Date","Repairable PN",
+"Is2nd Failure","PJ Aging","Request ID","Request ID Date","Req Aging","Test Stage","Approved By","Approved Comment",
+"Approved Reason","Rev","Contacted Vendor Date","Sap Doc Out","Pic1","Pic2","Pic3","Box ID"];
+
+const PENDING_LABEL = "PendingScrap";
+
+const App = {
+  schema: DEFAULT_HEADERS.map(name => ({name, included:true})),
+  snapshots: [], // {id, fileName, dateLabel, rows[], headers[], uploadedAt}
+  filters: { customer:new Set(), station:new Set(), disposition:new Set(), model:new Set(), defectPN:'' },
+  compare: { currentId:null, referenceId:null }, // which snapshot is "current" vs "reference" for comparison
+  backlog: { notStarted:new Set(), released:new Set(), requested:new Set(), initialized:false, targetRelease:'', targetRequest:'', includeWeekends:false, rateBasis:'rolling' },
+  log: [],
+  charts: {},
+  page: {datatable:1, movement:1},
+  sort: {datatable:{col:null,dir:1}}
+};
+const BACKLOG_DEFAULTS = {
+  notStarted: ['DMROpened','WHReceived','OfflineReceived','Delivered','DecisionMade','VisInspect'],
+  released: ['QAReleased','QAReceived'],
+  requested: ['RMARequested']
+};
+
+function log(msg){
+  App.log.unshift({t:new Date().toLocaleTimeString(), msg});
+  renderLog();
+}
+
+/* =========================================================================
+   CLEANING PIPELINE
+   ========================================================================= */
+function cleanDefectPN(v){
+  return String(v==null?'':v).replace(/[^a-zA-Z0-9\^]/g,'');
+}
+
+function processSheetRows(raw){
+  // raw = array of arrays, raw[0] = title row (discard), raw[1] = header row, raw[2..] = data
+  if(!raw || raw.length < 3) return {headers:[], rows:[], stats:{total:0,afterCustomer:0,scrapByRequest:0,scrapByDisposition:0}};
+  const headerRow = raw[1].map(h => String(h==null?'':h).trim());
+  const dataRows = raw.slice(2);
+
+  let rows = dataRows.map(r=>{
+    const obj = {};
+    headerRow.forEach((h,i)=>{
+      if(!h) return;
+      obj[h] = r[i]==null ? '' : r[i];
+    });
+    return obj;
+  }).filter(r => Object.values(r).some(v => String(v).trim() !== ''));
+
+  const totalBefore = rows.length;
+
+  // Rule: Customer column must not be blank -> delete row
+  rows = rows.filter(r => String(r[CORE_FIELDS.customer]==null?'':r[CORE_FIELDS.customer]).trim() !== '');
+  const afterCustomer = rows.length;
+
+  let scrapByRequest = 0, scrapByDisposition = 0;
+  rows.forEach(r=>{
+    // Rule: clean Defect PN (strip spaces/special chars, keep ^)
+    if(CORE_FIELDS.defectPN in r){
+      r[CORE_FIELDS.defectPN] = cleanDefectPN(r[CORE_FIELDS.defectPN]);
+    }
+    // Rule: Request ID starting with "500" -> Cur Station = PendingScrap
+    const reqId = String(r[CORE_FIELDS.requestId]==null?'':r[CORE_FIELDS.requestId]).trim();
+    if(reqId.startsWith('500')){
+      r[CORE_FIELDS.curStation] = PENDING_LABEL;
+      scrapByRequest++;
+    }
+    // Rule: Final Disposition starting with BPM / SCRAP / SEL -> Cur Station = PendingScrap
+    const fd = String(r[CORE_FIELDS.finalDisposition]==null?'':r[CORE_FIELDS.finalDisposition]).trim().toUpperCase();
+    if(fd.startsWith('BPM') || fd.startsWith('SCRAP') || fd.startsWith('SEL')){
+      r[CORE_FIELDS.curStation] = PENDING_LABEL;
+      scrapByDisposition++;
+    }
+  });
+
+  return {
+    headers: headerRow.filter(Boolean),
+    rows,
+    stats:{ total: totalBefore, afterCustomer, removedBlankCustomer: totalBefore-afterCustomer, scrapByRequest, scrapByDisposition }
+  };
+}
+
+// Guesses both a date and a time for a newly uploaded report. If the report's own
+// DMRCreate Date data gives us a best-guess date, we have no reliable time signal from
+// that, so time is left blank (pure date, as before). If we fall back to the file's own
+// last-modified timestamp, that carries a real time-of-day, so we use it for both.
+function guessDateTimeLabel(rows, fileName, fallbackDate){
+  let best = null;
+  for(const r of rows){
+    const v = r[CORE_FIELDS.createDate];
+    if(!v) continue;
+    const d = parseAnyDate(v);
+    if(d && (!best || d>best)) best = d;
+  }
+  if(best) return {date: toDateInput(best), time: ''};
+  if(fallbackDate) return {date: toDateInput(fallbackDate), time: toTimeInput(fallbackDate)};
+  const now = new Date();
+  return {date: toDateInput(now), time: toTimeInput(now)};
+}
+function parseAnyDate(v){
+  if(v instanceof Date) return v;
+  const n = Number(v);
+  if(!isNaN(n) && n>20000 && n<80000){ // excel serial
+    const d = new Date(Math.round((n-25569)*86400*1000));
+    if(!isNaN(d.getTime())) return d;
+  }
+  const d2 = new Date(v);
+  return isNaN(d2.getTime()) ? null : d2;
+}
+function toDateInput(d){
+  const pad = n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function toTimeInput(d){
+  const pad = n=>String(n).padStart(2,'0');
+  return pad(d.getHours())+':'+pad(d.getMinutes());
+}
+// Combines a snapshot's date + optional time into a single sortable/comparable timestamp
+// string. Reports without an explicit time default to noon — a neutral midpoint that
+// avoids biasing same-day comparisons toward "no time has passed" (midnight) or the
+// opposite extreme (end of day).
+function snapTimestamp(snap){
+  return snap.dateLabel + 'T' + (snap.timeLabel || '12:00');
+}
+// Human-readable "data date" for display: adds the time only if one was actually set.
+function snapMomentLabel(snap){
+  return snap.timeLabel ? `${snap.dateLabel} ${snap.timeLabel}` : snap.dateLabel;
+}
+// Span between two snapshots for rate calculations. Calendar-day mode gets full
+// fractional-day precision from the (optional) time-of-day; work-day mode stays at whole
+// calendar-day granularity, since "half a work day" isn't a meaningful unit here.
+function spanBetweenSnaps(snapA, snapB, includeWeekends){
+  if(includeWeekends) return daysBetween(snapTimestamp(snapA), snapTimestamp(snapB));
+  if(snapA.dateLabel === snapB.dateLabel){
+    // Same calendar day — whole-work-day counting can't tell these apart (it would say "0
+    // days apart" even with hours between them). Fall back to actual elapsed time as a
+    // fraction of a day so same-day, multiple-upload data still produces a real rate.
+    return daysBetween(snapTimestamp(snapA), snapTimestamp(snapB));
+  }
+  return workingDaysBetween(snapA.dateLabel, snapB.dateLabel);
+}
+// Parses any date/datetime-ish value and returns just the calendar day (YYYY-MM-DD),
+// dropping any time-of-day component — used for Request ID Date trending.
+function dateOnly(v){
+  if(v===undefined || v===null || String(v).trim()==='') return null;
+  const d = parseAnyDate(v);
+  return d ? toDateInput(d) : null;
+}
+// Math.max(...arr)/Math.min(...arr) blow the call stack on large arrays (JS engines cap how
+// many arguments can be spread into a call, ~65k-125k). These are safe at any size.
+function arrMax(arr){ let m = -Infinity; for(let i=0;i<arr.length;i++){ if(arr[i]>m) m=arr[i]; } return m; }
+function arrMin(arr){ let m = Infinity; for(let i=0;i<arr.length;i++){ if(arr[i]<m) m=arr[i]; } return m; }
+function daysBetween(dateStrA, dateStrB){ return (new Date(dateStrB) - new Date(dateStrA)) / 86400000; }
+function addDaysToDate(dateStr, days){
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + Math.round(days));
+  return toDateInput(d);
+}
+// Returns the Monday (ISO week start) that a given YYYY-MM-DD date falls in.
+function weekStart(dateStr){
+  const d = new Date(dateStr);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diff = (day===0 ? -6 : 1) - day;
+  d.setDate(d.getDate() + diff);
+  return toDateInput(d);
+}
+function isWeekend(date){ const dow = date.getDay(); return dow===0 || dow===6; }
+// Counts weekdays strictly between two YYYY-MM-DD dates (exclusive start, inclusive end).
+// Closed-form (no day-by-day loop) so it stays instant no matter how far apart the dates are.
+function workingDaysBetween(dateStrA, dateStrB){
+  const start = new Date(dateStrA), end = new Date(dateStrB);
+  if(end<=start) return 0;
+  const rangeStart = new Date(start); rangeStart.setDate(rangeStart.getDate()+1); // first day counted
+  if(rangeStart > end) return 0;
+  const totalDays = Math.round((end - rangeStart)/86400000) + 1; // inclusive calendar days in range
+  const fullWeeks = Math.floor(totalDays/7);
+  let count = fullWeeks*5;
+  const remainder = totalDays - fullWeeks*7;
+  let dow = rangeStart.getDay();
+  for(let i=0;i<remainder;i++){
+    if(dow!==0 && dow!==6) count++;
+    dow = (dow+1)%7;
+  }
+  return count;
+}
+// Adds N days to a date, skipping weekends when requested. Bulk-jumps full weeks (O(1)) and
+// only steps day-by-day for the small remainder, so it's instant even for very large N.
+function addWorkingDays(dateStr, days, includeWeekends){
+  if(includeWeekends) return addDaysToDate(dateStr, days);
+  const sign = days>=0 ? 1 : -1;
+  let remaining = Math.round(Math.abs(days));
+  const fullWeeks = Math.floor(remaining/5);
+  let extra = remaining - fullWeeks*5;
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + sign*fullWeeks*7); // exact weeks preserve day-of-week, so no weekend landing issue
+  while(extra>0){
+    d.setDate(d.getDate()+sign);
+    if(!isWeekend(d)) extra--;
+  }
+  return toDateInput(d);
+}
+// Span (in days or working days) between two dates, honoring the weekend toggle.
+function effectiveSpan(dateStrA, dateStrB, includeWeekends){
+  return includeWeekends ? daysBetween(dateStrA, dateStrB) : workingDaysBetween(dateStrA, dateStrB);
+}
+
+/* =========================================================================
+   LIBRARY READINESS
+   ========================================================================= */
+window.__showLibBanner = function(){
+  document.getElementById('libBanner').style.display = 'block';
+};
+function librariesReady(){
+  return typeof XLSX !== 'undefined' && typeof Chart !== 'undefined';
+}
+window.addEventListener('load', ()=>{
+  // Give the deferred scripts (and any CDN fallback) a moment, then verify.
+  setTimeout(()=>{
+    if(!librariesReady()) window.__showLibBanner();
+  }, 4000);
+});
+
+/* =========================================================================
+   FILE HANDLING
+   ========================================================================= */
+const HARD_ROW_CEILING = 1000000; // sanity backstop only — real Excel row limit is ~1,048,576
+// Scans from the bottom of the declared range for the last row that actually has data
+// in any of the first ~20 columns, so we only trim genuinely empty trailing rows.
+function findLastDenseDataRow(ws, rng){
+  const data = ws['!data'];
+  if(!data) return null;
+  const checkCols = Math.min(rng.e.c, rng.s.c + 20);
+  for(let r = rng.e.r; r >= rng.s.r; r--){
+    const row = data[r];
+    if(row){
+      for(let c = rng.s.c; c <= checkCols; c++){
+        const cell = row[c];
+        if(cell && cell.v !== undefined && cell.v !== null && String(cell.v).trim() !== ''){
+          return r;
+        }
+      }
+    }
+  }
+  return rng.s.r;
+}
+const fileInput = document.getElementById('fileInput');
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+function showOverlay(text){
+  const ov = document.getElementById('uploadOverlay');
+  document.getElementById('uploadOverlayText').textContent = text || 'Reading file…';
+  ov.style.display = 'flex';
+}
+function hideOverlay(){ document.getElementById('uploadOverlay').style.display = 'none'; }
+
+function handleFiles(fileList){
+  const files = Array.from(fileList);
+  if(!files.length) return;
+
+  const overlay = document.getElementById('uploadOverlay');
+  if(overlay.style.display==='flex'){
+    log('<span style="color:var(--amber)">Something is already in progress (another upload or an export) — please wait for it to finish before adding more files. Starting a second one at the same time can cause the two to interfere with each other.</span>');
+    return;
+  }
+
+  if(!librariesReady()){
+    window.__showLibBanner();
+    log('<span style="color:var(--red)">Cannot read files — the Excel parsing library has not loaded (check your network/firewall and reload the page).</span>');
+    return;
+  }
+
+  showOverlay(`Reading ${files.length} file${files.length>1?'s':''}…`);
+  // Process one file at a time with a yield in between so the UI thread never
+  // gets stuck for the whole batch and the spinner stays responsive.
+  let idx = 0;
+  function next(){
+    if(idx >= files.length){
+      // Parsing is done, but the full render (Overview, Backlog Tracker, Data Quality,
+      // Cycle Time, every pivot table, etc.) still has to run for the first time on real
+      // data — that can take a while on large files. Keep the overlay up through that too,
+      // instead of hiding it right before the heaviest work starts (which is what made the
+      // page look frozen with no feedback).
+      showOverlay('Analyzing data…');
+      setTimeout(()=>{
+        try{ afterUploadRefresh(); }
+        finally{ hideOverlay(); }
+      }, 30);
+      return;
+    }
+    const file = files[idx++];
+    showOverlay(`Reading ${file.name} (${idx}/${files.length})…`);
+    setTimeout(()=> processOneFile(file, next), 30);
+  }
+  next();
+  fileInput.value = '';
+}
+
+function processOneFile(file, done){
+  const reader = new FileReader();
+  reader.onerror = ()=>{
+    log(`<span style="color:var(--red)">Could not read ${escapeHtml(file.name)} (browser file read error).</span>`);
+    done();
+  };
+  reader.onload = e=>{
+    // Defer the heavy parse/clean work one more tick so the "reading…" state actually paints first.
+    setTimeout(()=>{
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array', dense:true});
+        const wsName = wb.SheetNames[0];
+        const ws = wb.Sheets[wsName];
+
+        // Some exported reports declare a used-range far larger than the real data
+        // (thousands/millions of blank formatted rows). Rather than capping row count
+        // (which would cut off real data), find the true last row containing data and
+        // only trim the empty tail — no real rows are ever dropped by this step.
+        const opts = {header:1, defval:'', raw:true};
+        let trimmedBlankTail = false;
+        if(ws['!ref']){
+          const rng = XLSX.utils.decode_range(ws['!ref']);
+          const declaredRows = rng.e.r - rng.s.r + 1;
+          if(declaredRows > 5000){ // only worth scanning for very large declared ranges
+            const lastDataRow = findLastDenseDataRow(ws, rng);
+            if(lastDataRow !== null && lastDataRow < rng.e.r){
+              opts.range = {s:{r:rng.s.r, c:rng.s.c}, e:{r:lastDataRow, c:rng.e.c}};
+              trimmedBlankTail = true;
+            }
+          }
+        }
+        const raw = XLSX.utils.sheet_to_json(ws, opts);
+
+        if(raw.length > HARD_ROW_CEILING + 2){
+          log(`<span style="color:var(--red)">${escapeHtml(file.name)} has ${raw.length.toLocaleString()} data rows, above the ${HARD_ROW_CEILING.toLocaleString()}-row safety ceiling for this browser tool. Please split the file or ask your report source to trim it, then re-upload.</span>`);
+          done();
+          return;
+        }
+
+        const {headers, rows, stats} = processSheetRows(raw);
+        registerHeaders(headers);
+
+        const guess = guessDateTimeLabel(rows, file.name, file.lastModifiedDate || new Date(file.lastModified));
+        const snap = {
+          id: 'snap_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+          fileName: file.name,
+          dateLabel: guess.date,
+          timeLabel: guess.time, // optional 'HH:MM' — blank means "time unknown", treated as noon for span math
+          rows, headers,
+          uploadedAt: Date.now()
+        };
+        App.snapshots.push(snap);
+        log(`Loaded <b>${escapeHtml(file.name)}</b> — ${stats.total} rows → ${stats.afterCustomer} kept (${stats.removedBlankCustomer} dropped, blank Customer), ${stats.scrapByRequest} flagged PendingScrap via Request ID, ${stats.scrapByDisposition} via Final Disposition.${trimmedBlankTail?` <span style="color:var(--text-faint)">(trimmed a large trailing block of empty formatted rows — no data rows were removed)</span>`:''}`);
+      }catch(err){
+        console.error(err);
+        log(`<span style="color:var(--red)">Failed to parse ${escapeHtml(file.name)}: ${escapeHtml(err.message||String(err))}</span>`);
+      }finally{
+        done();
+      }
+    }, 10);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function registerHeaders(headers){
+  headers.forEach(h=>{
+    if(!App.schema.find(c=>c.name===h)) App.schema.push({name:h, included:true});
+  });
+}
+
+function afterUploadRefresh(){
+  App.snapshots.sort((a,b)=> snapTimestamp(a).localeCompare(snapTimestamp(b)) || a.uploadedAt-b.uploadedAt);
+  document.getElementById('filterbar').style.display = App.snapshots.length ? 'flex' : 'none';
+  ensureCompareDefaults();
+  initBacklogConfig();
+  populateFilterOptions();
+  populateCompareSelects();
+  renderAll();
+}
+// Auto-picks the backlog/released/requested station sets the first time data loads,
+// matching case-insensitively against whatever Cur Station values actually exist.
+// Never overwrites choices the user has already customized.
+function initBacklogConfig(){
+  if(App.backlog.initialized) return;
+  const available = fieldOptions(CORE_FIELDS.curStation);
+  const matchDefaults = (names)=>{
+    const found = new Set();
+    names.forEach(n=>{
+      const hit = available.find(a=> a.toLowerCase()===n.toLowerCase());
+      if(hit) found.add(hit);
+    });
+    return found;
+  };
+  App.backlog.notStarted = matchDefaults(BACKLOG_DEFAULTS.notStarted);
+  App.backlog.released = matchDefaults(BACKLOG_DEFAULTS.released);
+  App.backlog.requested = matchDefaults(BACKLOG_DEFAULTS.requested);
+  App.backlog.initialized = available.length > 0;
+}
+
+/* =========================================================================
+   DERIVED DATA HELPERS
+   ========================================================================= */
+function chronSnapshots(){
+  return [...App.snapshots].sort((a,b)=> snapTimestamp(a).localeCompare(snapTimestamp(b)) || a.uploadedAt-b.uploadedAt);
+}
+// Keeps Current = latest report and Reference = the one immediately before it,
+// unless the user has explicitly picked snapshots that are still valid.
+function ensureCompareDefaults(){
+  const chron = chronSnapshots();
+  const ids = chron.map(s=>s.id);
+  if(!App.compare.currentId || !ids.includes(App.compare.currentId)){
+    App.compare.currentId = ids.length ? ids[ids.length-1] : null;
+  }
+  if(!App.compare.referenceId || !ids.includes(App.compare.referenceId)){
+    const curIdx = ids.indexOf(App.compare.currentId);
+    App.compare.referenceId = curIdx > 0 ? ids[curIdx-1] : (ids.length ? ids[0] : null);
+  }
+}
+function getCurrentSnapshot(){ return App.snapshots.find(s=>s.id===App.compare.currentId) || null; }
+function getReferenceSnapshot(){ return App.snapshots.find(s=>s.id===App.compare.referenceId) || null; }
+
+function fieldOptions(field){
+  const s = new Set();
+  App.snapshots.forEach(sn => sn.rows.forEach(r=>{
+    const v = String(r[field]==null?'':r[field]).trim();
+    if(v) s.add(v);
+  }));
+  return Array.from(s).sort();
+}
+
+function rowMatchesFilters(r){
+  const f = App.filters;
+  if(f.customer.size && !f.customer.has(String(r[CORE_FIELDS.customer]||'').trim())) return false;
+  if(f.station.size && !f.station.has(String(r[CORE_FIELDS.curStation]||'').trim())) return false;
+  if(f.disposition.size && !f.disposition.has(String(r[CORE_FIELDS.finalDisposition]||'').trim())) return false;
+  if(f.model.size && !f.model.has(String(r[CORE_FIELDS.model]||'').trim())) return false;
+  if(f.defectPN && !String(r[CORE_FIELDS.defectPN]||'').toUpperCase().includes(f.defectPN.toUpperCase())) return false;
+  return true;
+}
+
+function filteredRowsOfSnapshot(snap){
+  if(!snap) return [];
+  return snap.rows.filter(rowMatchesFilters);
+}
+function includedFields(){
+  return App.schema.filter(c=>c.included).map(c=>c.name);
+}
+
+/* Total DMR count per uploaded report, in chronological order — used for the
+   long-run trend line, independent of which snapshot is marked current/reference. */
+function buildTrendSeries(){
+  const chron = chronSnapshots();
+  return chron.map(s=>({ label:s.dateLabel, snap:s, count: filteredRowsOfSnapshot(s).length }));
+}
+
+/* Movement between exactly the chosen Reference snapshot and the chosen Current
+   snapshot (matched by DMR ID), regardless of how many other reports sit between them. */
+function buildMovement(){
+  const ref = getReferenceSnapshot(), cur = getCurrentSnapshot();
+  const empty = {transitions:{}, events:[], added:0, removed:0, moved:0, unchanged:0, addedIds:[], removedIds:[], movedIds:[], unchangedIds:[], ref, cur};
+  if(!ref || !cur || ref.id===cur.id) return empty;
+
+  const idField = CORE_FIELDS.id, stField = CORE_FIELDS.curStation;
+  const refMap = {}, curMap = {};
+  ref.rows.filter(rowMatchesFilters).forEach(r=>{ const id=String(r[idField]||'').trim(); if(id) refMap[id]=r; });
+  cur.rows.filter(rowMatchesFilters).forEach(r=>{ const id=String(r[idField]||'').trim(); if(id) curMap[id]=r; });
+  const refIds = new Set(Object.keys(refMap)), curIds = new Set(Object.keys(curMap));
+
+  const transitions = {}, events = [], movedIds = [], unchangedIds = [];
+  curIds.forEach(id=>{
+    if(!refIds.has(id)) return;
+    const from = String(refMap[id][stField]||'').trim() || '(blank)';
+    const to = String(curMap[id][stField]||'').trim() || '(blank)';
+    if(from !== to){
+      transitions[from] = transitions[from] || {};
+      transitions[from][to] = (transitions[from][to]||0) + 1;
+      events.push({ dmrId:id, from, to, customer: curMap[id][CORE_FIELDS.customer]||'', pn: curMap[id][CORE_FIELDS.defectPN]||'' });
+      movedIds.push(id);
+    } else unchangedIds.push(id);
+  });
+  const addedIds = [], removedIds = [];
+  curIds.forEach(id=>{ if(!refIds.has(id)) addedIds.push(id); });
+  refIds.forEach(id=>{ if(!curIds.has(id)) removedIds.push(id); });
+
+  return {
+    transitions, events, ref, cur,
+    added: addedIds.length, removed: removedIds.length, moved: movedIds.length, unchanged: unchangedIds.length,
+    addedIds, removedIds, movedIds, unchangedIds
+  };
+}
+
+/* =========================================================================
+   UI: TABS
+   ========================================================================= */
+// Maps a tab button's data-tab value to the render work it needs. Only the tab currently in
+// view gets computed on data/filter changes — the rest are marked "dirty" and rendered on
+// demand the moment you actually click over to them. On a large single report (hundreds of
+// thousands of rows), computing all ~10 tabs on every change was the dominant cost even though
+// only one tab is ever visible at a time — this cuts that down to just the tab you're using.
+const TAB_RENDER_MAP = {
+  overview: ()=> safeRender('Overview', renderOverview),
+  transitions: ()=> safeRender('Station Movement', renderTransitions),
+  pnsummary: ()=> safeRender('Defect PN Summary', renderPnSummary),
+  customer: ()=> safeRender('Customer Performance', renderCustomer),
+  aging: ()=> safeRender('Aging & Stuck Units', renderAging),
+  backlog: ()=> { safeRender('Backlog config', renderBacklogConfigChips); safeRender('Backlog Tracker', renderBacklog); },
+  quality: ()=> safeRender('Data Quality', renderQuality),
+  datatable: ()=> safeRender('Data Table', renderDataTable),
+};
+let dirtyTabs = new Set(Object.keys(TAB_RENDER_MAP));
+function markAllTabsDirty(){ dirtyTabs = new Set(Object.keys(TAB_RENDER_MAP)); }
+function activeTabKey(){
+  const btn = document.querySelector('.tab-btn.active');
+  const key = btn ? btn.dataset.tab : 'overview';
+  return TAB_RENDER_MAP[key] ? key : 'overview';
+}
+function renderTabIfNeeded(key, force){
+  if(!TAB_RENDER_MAP[key]) return;
+  if(!force && !dirtyTabs.has(key)) return; // already up to date, nothing to do
+  TAB_RENDER_MAP[key]();
+  dirtyTabs.delete(key);
+}
+
+document.getElementById('tabs').addEventListener('click', e=>{
+  const btn = e.target.closest('.tab-btn');
+  if(!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  if(App.snapshots.length>0) renderTabIfNeeded(btn.dataset.tab);
+});
+
+/* =========================================================================
+   UI: MULTISELECT FILTERS
+   ========================================================================= */
+function buildMultiselect(containerId, field, filterKey){
+  const el = document.getElementById(containerId);
+  const btn = el.querySelector('.msel-btn');
+  const pop = el.querySelector('.msel-pop');
+  btn.onclick = (e)=>{ e.stopPropagation(); closeAllMsel(el); el.classList.toggle('open'); };
+  el._field = field; el._filterKey = filterKey; el._pop = pop; el._btn = btn;
+  return el;
+}
+function closeAllMsel(except){
+  document.querySelectorAll('.msel.open').forEach(m=>{ if(m!==except) m.classList.remove('open'); });
+}
+document.addEventListener('click', ()=> document.querySelectorAll('.msel.open').forEach(m=>m.classList.remove('open')));
+
+const MSELS = {
+  customer: buildMultiselect('msel-customer', CORE_FIELDS.customer, 'customer'),
+  station: buildMultiselect('msel-station', CORE_FIELDS.curStation, 'station'),
+  disposition: buildMultiselect('msel-disposition', CORE_FIELDS.finalDisposition, 'disposition'),
+  model: buildMultiselect('msel-model', CORE_FIELDS.model, 'model'),
+};
+
+function populateFilterOptions(){
+  Object.values(MSELS).forEach(m=> renderMselOptions(m));
+}
+function renderMselOptions(m, searchTerm){
+  const options = fieldOptions(m._field);
+  const selected = App.filters[m._filterKey];
+  const term = (searchTerm||'').toUpperCase();
+  const shown = term ? options.filter(o=>o.toUpperCase().includes(term)) : options;
+  const DISPLAY_CAP = 2000; // just a render-performance guard; "select all" always covers every match, shown or not
+
+  let html = `<input class="msel-search" placeholder="Search… (${options.length} values total)" value="${escapeHtml(searchTerm||'')}">`;
+  shown.slice(0,DISPLAY_CAP).forEach(o=>{
+    html += `<label class="msel-opt"><input type="checkbox" value="${escapeHtml(o)}" ${selected.has(o)?'checked':''}> ${escapeHtml(o)}</label>`;
+  });
+  if(!shown.length) html += `<div style="padding:8px;color:var(--text-faint);font-size:11.5px;">No matches</div>`;
+  if(shown.length > DISPLAY_CAP) html += `<div style="padding:6px 8px;color:var(--text-faint);font-size:11px;">Showing first ${DISPLAY_CAP} of ${shown.length} — type to search the rest.</div>`;
+  html += `<div class="msel-actions"><button data-a="all">select all${shown.length>DISPLAY_CAP?` (${shown.length})`:''}</button><button data-a="none">clear</button></div>`;
+  m._pop.innerHTML = html;
+
+  m._pop.querySelector('.msel-search').addEventListener('input', ev=>{
+    renderMselOptions(m, ev.target.value);
+    m._pop.querySelector('.msel-search').focus();
+  });
+  m._pop.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+      updateMselLabel(m);
+      scheduleRenderAll();
+    });
+  });
+  m._pop.querySelector('[data-a="all"]').addEventListener('click', ()=>{
+    shown.forEach(o=>selected.add(o)); renderMselOptions(m, searchTerm); updateMselLabel(m); scheduleRenderAll();
+  });
+  m._pop.querySelector('[data-a="none"]').addEventListener('click', ()=>{
+    selected.clear(); renderMselOptions(m, searchTerm); updateMselLabel(m); scheduleRenderAll();
+  });
+  updateMselLabel(m);
+}
+function updateMselLabel(m){
+  const selected = App.filters[m._filterKey];
+  m._btn.querySelector('.lbl').textContent = selected.size ? (selected.size+' selected') : 'All';
+  m._btn.querySelector('.n').textContent = selected.size ? '●' : '';
+}
+
+document.getElementById('filterDefectPN').addEventListener('input', e=>{
+  App.filters.defectPN = e.target.value; scheduleRenderAll(300);
+});
+document.getElementById('clearFiltersBtn').addEventListener('click', ()=>{
+  App.filters.customer.clear(); App.filters.station.clear(); App.filters.disposition.clear(); App.filters.model.clear();
+  App.filters.defectPN=''; document.getElementById('filterDefectPN').value='';
+  Object.values(MSELS).forEach(m=>renderMselOptions(m));
+  scheduleRenderAll(0);
+});
+
+function populateCompareSelects(){
+  const curSel = document.getElementById('currentSnapshotSelect');
+  const refSel = document.getElementById('referenceSnapshotSelect');
+  const opts = chronSnapshots().map(s=>`<option value="${s.id}">${escapeHtml(snapMomentLabel(s))} · ${escapeHtml(s.fileName)}</option>`).join('');
+  curSel.innerHTML = opts; refSel.innerHTML = opts;
+  curSel.value = App.compare.currentId; refSel.value = App.compare.referenceId;
+  curSel.onchange = ()=>{ App.compare.currentId = curSel.value; renderAll(); };
+  refSel.onchange = ()=>{ App.compare.referenceId = refSel.value; renderAll(); };
+}
+document.getElementById('swapCompareBtn').addEventListener('click', ()=>{
+  const c = App.compare.currentId;
+  App.compare.currentId = App.compare.referenceId;
+  App.compare.referenceId = c;
+  populateCompareSelects();
+  renderAll();
+});
+
+/* =========================================================================
+   SNAPSHOT RAIL
+   ========================================================================= */
+function renderSnapRail(){
+  const rail = document.getElementById('snapRail');
+  if(!App.snapshots.length){
+    rail.innerHTML = `<span class="rail-label">Reports loaded</span><span class="empty-rail">No reports uploaded yet — add one or more Excel exports to begin.</span>`;
+    return;
+  }
+  let html = `<span class="rail-label">Reports loaded (${App.snapshots.length})</span>`;
+  chronSnapshots().forEach(s=>{
+    const isCur = s.id === App.compare.currentId;
+    const isRef = s.id === App.compare.referenceId;
+    html += `<div class="snap-chip" data-id="${s.id}" style="${isCur?'border-color:var(--amber);':isRef?'border-color:var(--blue);':''}">
+      ${isCur?'<span class="role-badge cur">CURRENT</span>':''}${isRef?'<span class="role-badge ref">REFERENCE</span>':''}
+      <span class="name" title="${escapeHtml(s.fileName)}">${escapeHtml(s.fileName)}</span>
+      <span class="count">${s.rows.length} rows</span>
+      <span class="date-time-group" title="Data date — the date (and optionally time) this report's data reflects. More precise = more accurate tracker rates.">
+        <input type="date" value="${s.dateLabel}">
+        <input type="time" value="${s.timeLabel||''}" title="Optional time-of-day — improves precision for reports uploaded multiple times per day">
+      </span>
+      <button class="mini-role" data-role="cur" title="Mark as current report">Set current</button>
+      <button class="mini-role" data-role="ref" title="Mark as reference report">Set reference</button>
+      <button class="mini-role" data-role="export" title="Export this report's cleaned data as .xlsx${s.rows.length>100000?' — this report has '+s.rows.length.toLocaleString()+' rows, so this may take a while; the CSV button next to it is much faster for large exports':''}">⇩ .xlsx</button>
+      <button class="mini-role" data-role="export-xlsb" title="Export this report's cleaned data as .xlsb — smaller file, but some systems may prompt to 'extract' it like a zip if double-clicked; open it from within Excel (File → Open) if that happens${s.rows.length>100000?'. This report has '+s.rows.length.toLocaleString()+' rows — CSV is much faster if speed matters more than file format':''}">⇩ .xlsb</button>
+      <button class="mini-role" data-role="export-csv" title="Export this report's cleaned data as plain CSV — the fastest option, especially for large reports (100k+ rows), since it skips all Excel formatting overhead">⇩ CSV</button>
+      <button class="x" title="Remove">×</button>
+    </div>`;
+  });
+  rail.innerHTML = html;
+  rail.querySelectorAll('.snap-chip').forEach(chip=>{
+    const id = chip.dataset.id;
+    chip.querySelector('input[type=date]').addEventListener('change', e=>{
+      const snap = App.snapshots.find(s=>s.id===id);
+      snap.dateLabel = e.target.value;
+      log(`Data date for <b>${escapeHtml(snap.fileName)}</b> set to ${snap.dateLabel}${snap.timeLabel?' '+snap.timeLabel:''}.`);
+      populateCompareSelects();
+      renderAll();
+    });
+    chip.querySelector('input[type=time]').addEventListener('change', e=>{
+      const snap = App.snapshots.find(s=>s.id===id);
+      snap.timeLabel = e.target.value;
+      log(`Data time for <b>${escapeHtml(snap.fileName)}</b> set to ${snap.dateLabel} ${snap.timeLabel||'(unset — treated as noon)'}.`);
+      populateCompareSelects();
+      renderAll();
+    });
+    chip.querySelectorAll('.mini-role').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if(btn.dataset.role==='cur'){ App.compare.currentId = id; populateCompareSelects(); renderAll(); }
+        else if(btn.dataset.role==='ref'){ App.compare.referenceId = id; populateCompareSelects(); renderAll(); }
+        else if(btn.dataset.role==='export'){
+          deferredExport(()=>{
+            const snap = App.snapshots.find(s=>s.id===id);
+            const cols = includedFields().filter(c=> snap.headers.includes(c));
+            const safeName = snap.fileName.replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'_');
+            exportAOA(`dmr_cleaned_${safeName || snap.dateLabel}`, cols, snap.rows.map(r=>cols.map(c=>r[c])));
+            log(`Exported cleaned data for <b>${escapeHtml(snap.fileName)}</b> (${snap.rows.length} rows).`);
+          });
+        }
+        else if(btn.dataset.role==='export-xlsb'){
+          deferredExport(()=>{
+            const snap = App.snapshots.find(s=>s.id===id);
+            const cols = includedFields().filter(c=> snap.headers.includes(c));
+            const safeName = snap.fileName.replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'_');
+            exportXLSBDirect(`dmr_cleaned_${safeName || snap.dateLabel}`, cols, snap.rows.map(r=>cols.map(c=>r[c])));
+            log(`Exported cleaned data for <b>${escapeHtml(snap.fileName)}</b> as .xlsb (${snap.rows.length} rows).`);
+          });
+        }
+        else if(btn.dataset.role==='export-csv'){
+          deferredExport(()=>{
+            const snap = App.snapshots.find(s=>s.id===id);
+            const cols = includedFields().filter(c=> snap.headers.includes(c));
+            const safeName = snap.fileName.replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'_');
+            exportCSVDirect(`dmr_cleaned_${safeName || snap.dateLabel}`, cols, snap.rows.map(r=>cols.map(c=>r[c])));
+            log(`Exported cleaned data for <b>${escapeHtml(snap.fileName)}</b> as CSV (${snap.rows.length} rows) — fastest format for large exports.`);
+          });
+        }
+      });
+    });
+    chip.querySelector('.x').addEventListener('click', ()=>{
+      const snap = App.snapshots.find(s=>s.id===id);
+      App.snapshots = App.snapshots.filter(s=>s.id!==id);
+      log(`Removed report <b>${escapeHtml(snap.fileName)}</b>.`);
+      document.getElementById('filterbar').style.display = App.snapshots.length ? 'flex' : 'none';
+      ensureCompareDefaults();
+      populateCompareSelects();
+      renderAll();
+    });
+  });
+}
+
+/* =========================================================================
+   RENDER LOG
+   ========================================================================= */
+function renderLog(){
+  const el = document.getElementById('processLog');
+  if(!el) return;
+  el.innerHTML = App.log.slice(0,40).map(l=>`<li><span style="color:var(--text-faint)">${l.t}</span> — ${l.msg}</li>`).join('') || '<li>No activity yet.</li>';
+}
+
+/* =========================================================================
+   MASTER RENDER
+   ========================================================================= */
+function safeRender(name, fn){
+  try{
+    fn();
+  }catch(err){
+    console.error(`Render error in ${name}:`, err);
+    log(`<span style="color:var(--red)">⚠ ${escapeHtml(name)} failed to render: ${escapeHtml(err.message||String(err))} — other tabs still work, this one may show stale/partial data. Check the browser console for details.</span>`);
+  }
+}
+
+// Debounced trigger for renderAll(). Filter controls (checkboxes, search-as-you-type) can fire
+// many times in quick succession; without this, each one blocks the page with a full, expensive
+// re-render immediately — selecting several customers in a row would freeze the tab for seconds.
+// This waits for a short pause in activity before actually rendering, and shows a subtle pending
+// state on the filter bar in the meantime so the click still feels acknowledged.
+let _renderAllTimer = null;
+function scheduleRenderAll(delay){
+  const summary = document.getElementById('filterSummary');
+  if(summary) summary.innerHTML = `<span style="color:var(--text-faint);">updating…</span>`;
+  if(_renderAllTimer) clearTimeout(_renderAllTimer);
+  _renderAllTimer = setTimeout(()=>{ _renderAllTimer=null; renderAll(); }, delay===undefined?200:delay);
+}
+
+function renderAll(){
+  renderSnapRail();
+  const has = App.snapshots.length > 0;
+
+  toggleEmpty('overview', has, 'No data yet', 'Upload one or more cleaned-on-the-fly Excel pending-DMR reports to see fleet KPIs, station load and top defect PNs.');
+  toggleEmpty('transitions', App.snapshots.length>=1, 'No data yet', 'Upload at least two reports (from different dates) to see how units move between stations over time.');
+  toggleEmpty('pn', has, 'No data yet', 'Upload a report to see the Defect PN × Current Station breakdown.');
+  toggleEmpty('cust', has, 'No data yet', 'Upload a report to see customer-level performance.');
+  toggleEmpty('aging', has, 'No data yet', 'Upload a report with Req Aging / PJ Aging values to see how long units have been sitting.');
+  toggleEmpty('backlog', has, 'No data yet', 'Upload at least one report to see current backlog; upload two or more (spanning time) to see throughput trend and target-date projections.');
+  toggleEmpty('quality', has, 'No data yet', 'Upload a report to see completeness and duplicate-ID checks.');
+  toggleEmpty('dt', has, 'No data yet', 'Upload a report to browse cleaned records.');
+
+  if(has){
+    markAllTabsDirty();
+    renderTabIfNeeded(activeTabKey(), true);
+  }
+  renderColumns();
+  renderLog();
+  updateFilterSummary();
+}
+
+function toggleEmpty(prefix, has, title, desc){
+  const emptyEl = document.getElementById(prefix+'Empty');
+  const contentEl = document.getElementById(prefix+'Content');
+  if(!emptyEl) return;
+  if(has){
+    emptyEl.innerHTML = '';
+    contentEl.style.display = 'block';
+  } else {
+    contentEl.style.display = 'none';
+    emptyEl.innerHTML = `<div class="empty-state"><div class="big">▦</div><h3>${title}</h3><p>${desc}</p></div>`;
+  }
+}
+
+function updateFilterSummary(){
+  const cur = getCurrentSnapshot();
+  const totalRows = filteredRowsOfSnapshot(cur).length;
+  document.getElementById('filterSummary').innerHTML = cur
+    ? `<b>${totalRows}</b> rows in view · current: <b style="color:var(--amber)">${escapeHtml(cur.dateLabel)}</b>`
+    : '';
+}
+
+/* =========================================================================
+   OVERVIEW
+   ========================================================================= */
+function renderOverview(){
+  const snap = getCurrentSnapshot();
+  const rows = filteredRowsOfSnapshot(snap);
+  const total = rows.length;
+  const pendingRows = rows.filter(r=> String(r[CORE_FIELDS.curStation]||'').trim()===PENDING_LABEL);
+  const pending = pendingRows.length;
+  const customers = new Set(rows.map(r=>String(r[CORE_FIELDS.customer]||'').trim())).size;
+  const stations = new Set(rows.map(r=>String(r[CORE_FIELDS.curStation]||'').trim()).filter(Boolean)).size;
+
+  const mv = buildMovement();
+  const hasCompare = mv.ref && mv.cur && mv.ref.id !== mv.cur.id;
+  const netChange = mv.added - mv.removed;
+
+  // Export current filtered view straight from Overview
+  const exportBtn = document.getElementById('exportOverviewBtn');
+  exportBtn.onclick = ()=>{
+    deferredExport(()=>{
+      const cols = includedFields().filter(c=> snap && snap.headers.includes(c));
+      exportAOA('dmr_overview_current_view', cols, rows.map(r=>cols.map(c=>r[c])));
+    });
+  };
+
+  const kpis = [
+    {label:'DMRs in current report', value: total, cls:'', sub: snap ? (snap.dateLabel+' · '+snap.fileName) : '', click: total? ()=>openDrill('DMRs in current report', snap?`${snap.dateLabel} · ${snap.fileName}`:'', rows) : null},
+    {label:'Pending scrap (flagged)', value: pending, cls:'amber', sub: total? Math.round(pending/total*100)+'% of view' : '', click: pending? ()=>openDrill('Pending scrap units', 'Cur Station = PendingScrap', pendingRows) : null},
+    {label:'Distinct customers', value: customers, cls:'', sub:'in current view — see Customer Performance tab'},
+    {label:'Active stations', value: stations, cls:'', sub:'distinct Cur Station values — see list below'},
+    {label:'Reports uploaded', value: App.snapshots.length, cls:'', sub:'snapshots available'},
+    hasCompare ? {label:'Change vs reference', value: (netChange>=0?'+':'')+netChange, cls: (netChange>=0?'red':'green'), sub: `${mv.added} new · ${mv.removed} cleared · ${mv.moved} moved — click for the records`,
+        click: (mv.added+mv.removed+mv.moved)? ()=>{
+          const combined = [];
+          if(mv.cur){ const addSet=new Set(mv.addedIds), movSet=new Set(mv.movedIds);
+            mv.cur.rows.forEach(r=>{ const id=String(r[CORE_FIELDS.id]||'').trim();
+              if(addSet.has(id)) combined.push(Object.assign({__ChangeType:'New in current'}, r));
+              else if(movSet.has(id)) combined.push(Object.assign({__ChangeType:'Moved station'}, r));
+            });
+          }
+          if(mv.ref){ const remSet=new Set(mv.removedIds);
+            mv.ref.rows.forEach(r=>{ const id=String(r[CORE_FIELDS.id]||'').trim();
+              if(remSet.has(id)) combined.push(Object.assign({__ChangeType:'Cleared since reference'}, r));
+            });
+          }
+          openDrill(`Change vs reference — ${combined.length} DMRs`, `reference ${escapeHtml(mv.ref.dateLabel)} → current ${escapeHtml(mv.cur.dateLabel)}`, combined);
+        } : null }
+      : {label:'Change vs reference', value:'—', cls:'', sub:'pick a different reference report above'}
+  ];
+  document.getElementById('kpiGrid').innerHTML = kpis.map((k,i)=>`
+    <div class="kpi ${k.cls}" ${k.click?'style="cursor:pointer;" data-kpi="'+i+'"':''}><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub||''}</div></div>
+  `).join('');
+  document.querySelectorAll('#kpiGrid [data-kpi]').forEach(el=>{
+    const k = kpis[Number(el.dataset.kpi)];
+    if(k && k.click) el.addEventListener('click', k.click);
+  });
+
+  // trend chart: total rows per snapshot (in date order), filters applied per-snapshot — small sparkbar, click a bar to drill that report
+  const trend = buildTrendSeries();
+  drawBarChart('chartTrend', trend.map(t=>t.label), [{
+    label:'Total DMRs', data: trend.map(t=>t.count), color:getCss('--amber')
+  }], false, idx=>{
+    const t = trend[idx];
+    if(t) openDrill(`DMRs in report — ${t.label}`, `${t.snap.fileName} · filters applied`, filteredRowsOfSnapshot(t.snap));
+  }, {sparkline:true});
+
+  // reference vs current summary — stat tiles instead of a bar chart (Unchanged tends to dwarf the others on a shared scale)
+  const compareCats = [
+    {key:'new', label:'New', ids: mv.addedIds||[], snap: mv.cur},
+    {key:'cleared', label:'Cleared', ids: mv.removedIds||[], snap: mv.ref},
+    {key:'moved', label:'Moved station', ids: mv.movedIds||[], snap: mv.cur},
+    {key:'unchanged', label:'Unchanged', ids: mv.unchangedIds||[], snap: mv.cur}
+  ];
+  const tilesEl = document.getElementById('changeStatTiles');
+  tilesEl.innerHTML = compareCats.map((c,i)=>
+    `<div class="stat-tile ${c.key}" data-cc="${i}"><div class="label">${c.label}</div><div class="value">${c.ids.length}</div></div>`
+  ).join('');
+  tilesEl.querySelectorAll('[data-cc]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const c = compareCats[Number(el.dataset.cc)];
+      if(!c || !c.snap || !c.ids.length) return;
+      const idSet = new Set(c.ids);
+      const drows = c.snap.rows.filter(r=> idSet.has(String(r[CORE_FIELDS.id]||'').trim()));
+      openDrill(`${c.label} — ${drows.length} DMR${drows.length===1?'':'s'}`, `vs reference ${escapeHtml(mv.ref?mv.ref.dateLabel:'')} → current ${escapeHtml(mv.cur?mv.cur.dateLabel:'')}`, drows);
+    });
+  });
+
+  // Request ID Date — weekly volume, timestamp stripped
+  const byReqWeek = {};
+  rows.forEach(r=>{
+    const d = dateOnly(r[CORE_FIELDS.requestIdDate]);
+    if(!d) return;
+    const wk = weekStart(d);
+    (byReqWeek[wk] = byReqWeek[wk] || []).push(r);
+  });
+  const reqWeeks = Object.keys(byReqWeek).sort();
+  drawBarChart('chartRequestDate', reqWeeks.map(w=>'Week of '+w), [{label:'Requests', data: reqWeeks.map(w=>byReqWeek[w].length), color: getCss('--teal')}], false,
+    idx=>{
+      const w = reqWeeks[idx];
+      if(w) openDrill(`Request ID Date — week of ${w}`, `${byReqWeek[w].length} units`, byReqWeek[w]);
+    });
+  document.getElementById('exportRequestDateBtn').onclick = ()=>{
+    deferredExport(()=>{
+      const cols = includedFields().filter(c=> snap && snap.headers.includes(c));
+      exportAOA('dmr_current_view_all_data', cols, rows.map(r=>cols.map(c=>r[c])));
+    });
+  };
+
+  // by station — click a bar to drill that station (top 12, for the chart)
+  const byStation = groupCount(rows, r=>String(r[CORE_FIELDS.curStation]||'(blank)').trim()||'(blank)');
+  const stEntriesAll = Object.entries(byStation).sort((a,b)=>b[1]-a[1]);
+  const stEntries = stEntriesAll.slice(0,12);
+  drawBarChart('chartByStation', stEntries.map(e=>e[0]), [{label:'Units', data: stEntries.map(e=>e[1]), color: getCss('--blue')}], true,
+    idx=>{
+      const st = stEntries[idx][0];
+      openDrill(`Cur Station = ${st}`, `${stEntries[idx][1]} units`, rows.filter(r=> (String(r[CORE_FIELDS.curStation]||'').trim()||'(blank)')===st));
+    });
+
+  // top PN — click a bar to drill that Defect PN
+  const byPN = groupCount(rows, r=>String(r[CORE_FIELDS.defectPN]||'(blank)').trim()||'(blank)');
+  const pnEntries = Object.entries(byPN).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  drawBarChart('chartTopPN', pnEntries.map(e=>e[0]), [{label:'Units', data: pnEntries.map(e=>e[1]), color: getCss('--green')}], true,
+    idx=>{
+      const pn = pnEntries[idx][0];
+      openDrill(`Defect PN = ${pn}`, `${pnEntries[idx][1]} units`, rows.filter(r=> (String(r[CORE_FIELDS.defectPN]||'').trim()||'(blank)')===pn));
+    });
+
+  // every station, complete list (not capped) — small stat-card grid, styled like the fleet snapshot KPIs
+  const stationGridEl = document.getElementById('stationKpiGrid');
+  stationGridEl.innerHTML = stEntriesAll.map((e,i)=>
+    `<div class="kpi ${e[0]===PENDING_LABEL?'red':''}" data-st="${i}"><div class="label">${escapeHtml(e[0])}</div><div class="value">${e[1]}</div></div>`
+  ).join('') || `<span style="color:var(--text-faint);font-size:12px;">No rows in view.</span>`;
+  stationGridEl.querySelectorAll('[data-st]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const [st,count] = stEntriesAll[Number(el.dataset.st)];
+      openDrill(`Cur Station = ${st}`, `${count} units`, rows.filter(r=> (String(r[CORE_FIELDS.curStation]||'').trim()||'(blank)')===st));
+    });
+  });
+
+  // complete Final Disposition breakdown — every distinct value, no cap, as a tiny dropdown (low priority, kept out of the way)
+  const byDisp = groupCount(rows, r=>String(r[CORE_FIELDS.finalDisposition]||'').trim() || '(blank)');
+  const dispEntries = Object.entries(byDisp).sort((a,b)=>b[1]-a[1]);
+  const dispSelect = document.getElementById('dispositionSelect');
+  dispSelect.innerHTML = `<option value="">Inspect a value… (${dispEntries.length})</option>` +
+    dispEntries.map(([val,count],i)=>`<option value="${i}">${escapeHtml(val)} — ${count}</option>`).join('');
+  dispSelect.onchange = ()=>{
+    if(dispSelect.value===''){ return; }
+    const [val,count] = dispEntries[Number(dispSelect.value)];
+    openDrill(`Final Disposition = ${val}`, `${count} units`, rows.filter(r=> (String(r[CORE_FIELDS.finalDisposition]||'').trim()||'(blank)')===val));
+    dispSelect.value = '';
+  };
+
+  try{ renderBacklogAlertBanner(); }catch(err){
+    console.error('Backlog alert banner failed:', err);
+    const b = document.getElementById('backlogAlertBanner');
+    if(b) b.style.display = 'none';
+  }
+}
+
+// Plain-language "is the backlog growing or shrinking" banner, based on the same rolling
+// 30-day creation/release rates used in the Backlog Tracker tab.
+function renderBacklogAlertBanner(){
+  const banner = document.getElementById('backlogAlertBanner');
+  if(!App.backlog.initialized || (App.backlog.notStarted.size===0 && App.backlog.released.size===0)){
+    banner.style.display='none';
+    return;
+  }
+  const a = computeBacklogAnalysis();
+  const created = a.avgCreatedPerDayRolling, released = a.avgReleasePerDayRolling;
+  if(created===null || released===null){
+    banner.style.display='none';
+    return;
+  }
+  const net = created - released;
+  const dayWord = App.backlog.includeWeekends ? 'day' : 'work day';
+  let cls, icon, text;
+  if(Math.abs(net) < 0.05){
+    cls='neutral'; icon='→';
+    text = `Backlog is roughly <b>stable</b> — creating ${created.toFixed(2)}/${dayWord}, releasing ${released.toFixed(2)}/${dayWord} (last 30 days).`;
+  } else if(net>0){
+    cls='red'; icon='⚠';
+    text = `Backlog is <b>growing</b> — creating ${created.toFixed(2)}/${dayWord} but only releasing ${released.toFixed(2)}/${dayWord} (last 30 days). Net +${net.toFixed(2)}/${dayWord} ≈ <b>${Math.round(net*30)}</b> extra units/month at this rate.`;
+  } else {
+    cls='green'; icon='✓';
+    text = `Backlog is <b>shrinking</b> — releasing ${released.toFixed(2)}/${dayWord} against ${created.toFixed(2)}/${dayWord} created (last 30 days). Net ${net.toFixed(2)}/${dayWord} ≈ <b>${Math.round(-net*30)}</b> fewer units/month at this rate.`;
+  }
+  banner.className = 'alert-banner '+cls;
+  banner.style.display='flex';
+  banner.innerHTML = `<span class="ic">${icon}</span><span class="txt">${text}</span><button class="btn btn-sm btn-ghost" id="gotoBacklogBtn">View Backlog Tracker →</button>`;
+  document.getElementById('gotoBacklogBtn').addEventListener('click', ()=>{
+    const tabBtn = document.querySelector('.tab-btn[data-tab="backlog"]');
+    if(tabBtn) tabBtn.click();
+  });
+}
+
+/* =========================================================================
+   ONE-PAGE PRINT SUMMARY
+   ========================================================================= */
+function generatePrintSummary(){
+  const snap = getCurrentSnapshot();
+  if(!snap){ log('Upload a report before printing a summary.'); return; }
+  const rows = filteredRowsOfSnapshot(snap);
+  const total = rows.length;
+  const pending = rows.filter(r=> String(r[CORE_FIELDS.curStation]||'').trim()===PENDING_LABEL).length;
+  const customers = new Set(rows.map(r=>String(r[CORE_FIELDS.customer]||'').trim())).size;
+  const mv = buildMovement();
+  const hasCompare = mv.ref && mv.cur && mv.ref.id !== mv.cur.id;
+
+  const byStation = groupCount(rows, r=>String(r[CORE_FIELDS.curStation]||'(blank)').trim()||'(blank)');
+  const stTop = Object.entries(byStation).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const byPN = groupCount(rows, r=>String(r[CORE_FIELDS.defectPN]||'(blank)').trim()||'(blank)');
+  const pnTop = Object.entries(byPN).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  let alertHtml = '';
+  const banner = document.getElementById('backlogAlertBanner');
+  if(banner && banner.style.display!=='none' && banner.querySelector('.txt')){
+    alertHtml = `<div class="psum-alert">${banner.querySelector('.txt').innerHTML}</div>`;
+  }
+
+  const kpis = [
+    {l:'DMRs in report', v: total},
+    {l:'Pending scrap', v: pending},
+    {l:'Distinct customers', v: customers},
+    {l:'Change vs reference', v: hasCompare ? `${mv.added} new / ${mv.removed} cleared / ${mv.moved} moved` : '—'}
+  ];
+
+  const stationImg = App.charts['chartByStation'] ? App.charts['chartByStation'].toBase64Image() : '';
+  const pnImg = App.charts['chartTopPN'] ? App.charts['chartTopPN'].toBase64Image() : '';
+
+  let html = `
+    <div class="psum-h1">DMR Pending Report — Summary</div>
+    <div class="psum-meta">Report: ${escapeHtml(snap.fileName)} (${escapeHtml(snap.dateLabel)}) · Filters applied where set · Generated ${new Date().toLocaleString()}</div>
+    ${alertHtml}
+    <div class="psum-grid">
+      ${kpis.map(k=>`<div class="psum-kpi"><div class="l">${escapeHtml(k.l)}</div><div class="v">${escapeHtml(String(k.v))}</div></div>`).join('')}
+    </div>
+    <div class="psum-h2">Where units sit / top defect PNs</div>
+    <div class="psum-imgs">
+      ${stationImg?`<img src="${stationImg}">`:'<div>No station chart available.</div>'}
+      ${pnImg?`<img src="${pnImg}">`:'<div>No PN chart available.</div>'}
+    </div>
+    <div class="psum-h2">Top stations</div>
+    <table class="psum-table"><thead><tr><th>Cur Station</th><th>Units</th></tr></thead><tbody>
+      ${stTop.map(([s,c])=>`<tr><td>${escapeHtml(s)}</td><td>${c}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="psum-h2">Top defect part numbers</div>
+    <table class="psum-table"><thead><tr><th>Defect PN</th><th>Units</th></tr></thead><tbody>
+      ${pnTop.map(([p,c])=>`<tr><td>${escapeHtml(p)}</td><td>${c}</td></tr>`).join('')}
+    </tbody></table>
+  `;
+  document.getElementById('printSummary').innerHTML = html;
+  window.print();
+}
+document.getElementById('printSummaryBtn').addEventListener('click', generatePrintSummary);
+
+function groupCount(rows, keyFn){
+  const m = {};
+  rows.forEach(r=>{ const k = keyFn(r); m[k] = (m[k]||0)+1; });
+  return m;
+}
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+/* =========================================================================
+   CHARTS (Chart.js)
+   ========================================================================= */
+function destroyChart(id){ if(App.charts[id]){ App.charts[id].destroy(); delete App.charts[id]; } }
+const chartDefaults = {
+  color: '#8ea0b3', font:{family:"'IBM Plex Mono', monospace", size:10.5}
+};
+function drawLineChart(canvasId, labels, series, onPointClick, opts){
+  destroyChart(canvasId);
+  const sparkline = opts && opts.sparkline;
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  App.charts[canvasId] = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets: series.map(s=>({
+      label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.noFill? 'transparent' : s.color+'2a',
+      borderDash: s.dashed? [6,4] : undefined,
+      tension:.3, fill: s.fillTo!==undefined ? s.fillTo : (s.noFill? false : true), borderWidth: sparkline?2:(s.hairline?1:2), spanGaps:true,
+      pointRadius: sparkline?2:(s.dashed?3:4), pointHoverRadius: sparkline?5:6, pointBackgroundColor:s.color,
+      order: s.order
+    })) },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout: sparkline ? {padding:{top:6,bottom:0,left:2,right:2}} : undefined,
+      onHover:(evt,els)=>{ evt.native.target.style.cursor = (onPointClick && els.length) ? 'pointer' : 'default'; },
+      onClick: onPointClick ? (evt, els)=>{ if(els.length) onPointClick(els[0].index, els[0].datasetIndex); } : undefined,
+      plugins:{ legend:{ display: !sparkline && series.length>1, labels:{color:'#8ea0b3', font:chartDefaults.font} } },
+      scales: sparkline ? {
+        x:{ display:false }, y:{ display:false }
+      } : {
+        x:{ ticks:{color:'#8ea0b3', font:chartDefaults.font}, grid:{color:'#1a2530'} },
+        y:{ ticks:{color:'#8ea0b3', font:chartDefaults.font}, grid:{color:'#1a2530'}, beginAtZero:true }
+      }
+    }
+  });
+}
+function drawBarChart(canvasId, labels, series, horizontal, onBarClick, opts){
+  destroyChart(canvasId);
+  const stacked = opts && opts.stacked;
+  const sparkline = opts && opts.sparkline;
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  App.charts[canvasId] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets: series.map(s=>({label:s.label, data:s.data, backgroundColor:s.color, borderRadius: stacked?0:(sparkline?1:2), barPercentage: sparkline?0.7:undefined})) },
+    options:{
+      indexAxis: horizontal? 'y':'x',
+      responsive:true, maintainAspectRatio:false,
+      layout: sparkline ? {padding:{top:6,bottom:0,left:2,right:2}} : undefined,
+      onHover:(evt,els)=>{ evt.native.target.style.cursor = (onBarClick && els.length) ? 'pointer' : 'default'; },
+      onClick: onBarClick ? (evt, els)=>{ if(els.length) onBarClick(els[0].index, els[0].datasetIndex); } : undefined,
+      plugins:{ legend:{ display: !sparkline && series.length>1, labels:{color:'#8ea0b3', font:chartDefaults.font} } },
+      scales: sparkline ? {
+        x:{ display:false, stacked: !!stacked }, y:{ display:false, stacked: !!stacked, beginAtZero:true }
+      } : {
+        x:{ stacked: !!stacked, ticks:{color:'#8ea0b3', font:chartDefaults.font}, grid:{color:'#1a2530'} },
+        y:{ stacked: !!stacked, ticks:{color:'#8ea0b3', font:chartDefaults.font}, grid:{color:'#1a2530'} }
+      }
+    }
+  });
+}
+function drawDoughnut(canvasId, labels, data, colors, onSliceClick){
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  App.charts[canvasId] = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels, datasets:[{data, backgroundColor:colors, borderColor:'#0a0e13', borderWidth:2}] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      onHover:(evt,els)=>{ evt.native.target.style.cursor = (onSliceClick && els.length) ? 'pointer' : 'default'; },
+      onClick: onSliceClick ? (evt, els)=>{ if(els.length) onSliceClick(els[0].index); } : undefined,
+      plugins:{legend:{position:'right', labels:{color:'#8ea0b3', font:chartDefaults.font, boxWidth:12}}}
+    }
+  });
+}
+
+/* =========================================================================
+   DRILL-DOWN MODAL
+   ========================================================================= */
+const DRILL_PRIORITY_COLS = ['DMR ID','DMRCreate Date','Customer','Model','UUT Type','UUT PN','UUT SN','Rack Location',
+  'Defect PN','Defect SN','Qty','Cur Station','Final Disposition','Cur Status','Return Type','Request ID','Request ID Date','Req Aging','PJ Aging',
+  'Test Station','Failure','Repair Conclusion','Comments'];
+
+function pickDrillColumns(rows){
+  const keysPresent = new Set();
+  rows.forEach(r=> Object.keys(r).forEach(k=>keysPresent.add(k)));
+  const cols = DRILL_PRIORITY_COLS.filter(c=>keysPresent.has(c));
+  includedFields().forEach(c=>{ if(keysPresent.has(c) && !cols.includes(c) && cols.length<24) cols.push(c); });
+  if(keysPresent.has('__ChangeType')) cols.unshift('__ChangeType');
+  return cols;
+}
+
+function openDrill(title, sub, rows){
+  App._drillRows = rows;
+  App._drillCols = pickDrillColumns(rows);
+  document.getElementById('drillTitle').textContent = title;
+  document.getElementById('drillSub').textContent = sub || `${rows.length} record${rows.length===1?'':'s'}`;
+  document.getElementById('drillSearch').style.display = rows.length>15 ? 'inline-block':'none';
+  document.getElementById('drillSearch').value='';
+  renderDrillTable('');
+  document.getElementById('drillModal').style.display='flex';
+}
+function closeDrill(){ document.getElementById('drillModal').style.display='none'; }
+document.getElementById('drillCloseBtn').addEventListener('click', closeDrill);
+document.getElementById('drillModal').addEventListener('click', e=>{ if(e.target.id==='drillModal') closeDrill(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrill(); });
+document.getElementById('drillSearch').addEventListener('input', e=> renderDrillTable(e.target.value));
+document.getElementById('drillExportBtn').addEventListener('click', ()=>{
+  deferredExport(()=>{
+    const cols = App._drillCols||[];
+    const rows = App._drillRows||[];
+    exportAOA('drilldown_export', cols.map(drillHeaderLabel), rows.map(r=>cols.map(c=>r[c])));
+  });
+});
+
+function drillHeaderLabel(c){
+  return c==='__reportDate' ? 'Report date' : c==='__reportFile' ? 'Report file' : c==='__ChangeType' ? 'Change type' : c;
+}
+function renderDrillTable(term){
+  const cols = App._drillCols||[];
+  let rows = App._drillRows||[];
+  if(term) rows = rows.filter(r=> cols.some(c=>String(r[c]||'').toUpperCase().includes(term.toUpperCase())));
+  let html = '<thead><tr>'+cols.map(c=>`<th>${escapeHtml(drillHeaderLabel(c))}</th>`).join('')+'</tr></thead><tbody>';
+  rows.slice(0,500).forEach(r=>{
+    html += '<tr>'+cols.map(c=>{
+      if(c==='DMR ID') return `<td><span class="dmr-link" data-id="${escapeAttr(r[c])}">${escapeHtml(r[c])}</span></td>`;
+      if(c===CORE_FIELDS.curStation) return `<td>${stationBadge(r[c])}</td>`;
+      return `<td>${escapeHtml(r[c])}</td>`;
+    }).join('') + '</tr>';
+  });
+  if(!rows.length) html += `<tr><td colspan="${cols.length||1}" style="padding:20px;color:var(--text-faint);">No matching records.</td></tr>`;
+  if(rows.length>500) html += `<tr><td colspan="${cols.length||1}" style="padding:10px;color:var(--text-faint);font-style:italic;">Showing first 500 of ${rows.length} — export or search to narrow.</td></tr>`;
+  html += '</tbody>';
+  const table = document.getElementById('drillTable');
+  table.innerHTML = html;
+  table.querySelectorAll('.dmr-link').forEach(a=> a.addEventListener('click', ()=> openDmrHistory(a.dataset.id)));
+}
+
+/* Every record of a single DMR ID across every uploaded report — the "dig deeper" view. */
+function openDmrHistory(dmrId){
+  const id = String(dmrId||'').trim();
+  if(!id) return;
+  const chron = chronSnapshots();
+  const records = [];
+  chron.forEach(s=>{
+    const r = s.rows.find(row=> String(row[CORE_FIELDS.id]||'').trim()===id);
+    if(r) records.push(Object.assign({__reportDate:s.dateLabel, __reportFile:s.fileName}, r));
+  });
+  if(!records.length){ log(`No records found for DMR ID <b>${escapeHtml(id)}</b>.`); return; }
+
+  const baseCols = pickDrillColumns(records).filter(c=>c!=='DMR ID');
+  const cols = ['__reportDate','__reportFile', ...baseCols];
+  App._drillRows = records; App._drillCols = cols;
+
+  document.getElementById('drillTitle').textContent = `DMR ${id} — history across reports`;
+  document.getElementById('drillSub').textContent = `${records.length} of ${chron.length} uploaded report${chron.length===1?'':'s'} contain this DMR`;
+  document.getElementById('drillSearch').style.display='none';
+
+  let html = '<thead><tr>'+cols.map(c=>`<th>${escapeHtml(drillHeaderLabel(c))}</th>`).join('')+'</tr></thead><tbody>';
+  let prevStation = null;
+  records.forEach(r=>{
+    const st = String(r[CORE_FIELDS.curStation]||'').trim();
+    const changed = prevStation!==null && st!==prevStation;
+    html += '<tr>'+cols.map(c=>{
+      if(c===CORE_FIELDS.curStation) return `<td>${stationBadge(r[c])} ${changed?'<span style="color:var(--amber);font-size:10px;margin-left:6px;">← changed</span>':''}</td>`;
+      return `<td>${escapeHtml(r[c])}</td>`;
+    }).join('')+'</tr>';
+    prevStation = st;
+  });
+  html += '</tbody>';
+  document.getElementById('drillTable').innerHTML = html;
+  document.getElementById('drillModal').style.display='flex';
+}
+
+/* =========================================================================
+   GLOBAL SEARCH
+   ========================================================================= */
+function runGlobalSearch(){
+  const input = document.getElementById('globalSearchInput');
+  const term = input.value.trim();
+  if(!term) return;
+  if(!App.snapshots.length){ log('Upload a report before searching.'); return; }
+
+  // Exact DMR ID match anywhere across all uploaded reports → jump straight to its full history.
+  const idHit = App.snapshots.some(s=> s.rows.some(r=> String(r[CORE_FIELDS.id]||'').trim().toUpperCase() === term.toUpperCase()));
+  if(idHit){
+    openDmrHistory(term);
+    return;
+  }
+
+  // Otherwise, a broad search across the current report for DMR ID / Defect PN / Customer / Model matches.
+  const snap = getCurrentSnapshot();
+  if(!snap){ log('No current report selected to search.'); return; }
+  const upper = term.toUpperCase();
+  const fields = [CORE_FIELDS.id, CORE_FIELDS.defectPN, CORE_FIELDS.customer, CORE_FIELDS.model];
+  const hits = snap.rows.filter(r=> fields.some(f=> String(r[f]||'').toUpperCase().includes(upper)));
+  if(!hits.length){
+    log(`No matches for "<b>${escapeHtml(term)}</b>" in DMR ID, Defect PN, Customer, or Model (current report: ${escapeHtml(snap.dateLabel)}).`);
+    return;
+  }
+  openDrill(`Search results for "${term}"`, `${hits.length} match${hits.length===1?'':'es'} in current report (${escapeHtml(snap.dateLabel)}) · DMR ID / Defect PN / Customer / Model`, hits);
+}
+document.getElementById('globalSearchBtn').addEventListener('click', runGlobalSearch);
+document.getElementById('globalSearchInput').addEventListener('keydown', e=>{ if(e.key==='Enter') runGlobalSearch(); });
+
+
+/* =========================================================================
+   TRANSITIONS TAB
+   ========================================================================= */
+function renderTransitions(){
+  const mv = buildMovement();
+  const {transitions, events, ref, cur} = mv;
+
+  const banner = document.getElementById('compareBanner');
+  if(!ref || !cur){
+    banner.innerHTML = `<span style="color:var(--text-faint);font-size:12.5px;">Select a current and a reference report above to compare.</span>`;
+  } else if(ref.id === cur.id){
+    banner.innerHTML = `<span style="color:var(--red);font-size:12.5px;">Current and reference are set to the same report — pick two different reports to see movement.</span>`;
+  } else {
+    banner.innerHTML = `
+      <div><span class="role-badge ref">REFERENCE</span> <b>${escapeHtml(snapMomentLabel(ref))}</b> <span style="color:var(--text-faint)">· ${escapeHtml(ref.fileName)} · ${ref.rows.length} rows</span></div>
+      <div style="color:var(--text-faint);">→</div>
+      <div><span class="role-badge cur">CURRENT</span> <b>${escapeHtml(snapMomentLabel(cur))}</b> <span style="color:var(--text-faint)">· ${escapeHtml(cur.fileName)} · ${cur.rows.length} rows</span></div>`;
+  }
+
+  const hasCompare = ref && cur && ref.id !== cur.id;
+  const kpiDefs = [
+    {label:'Moved station', value:mv.moved, cls:'amber', ids:mv.movedIds, snap:cur},
+    {label:'New in current', value:mv.added, cls:'red', ids:mv.addedIds, snap:cur},
+    {label:'Cleared since reference', value:mv.removed, cls:'green', ids:mv.removedIds, snap:ref},
+    {label:'Unchanged station', value:mv.unchanged, cls:'', ids:mv.unchangedIds, snap:cur}
+  ];
+  document.getElementById('compareKpis').innerHTML = !hasCompare ? '' : kpiDefs.map((k,i)=>
+    `<div class="kpi ${k.cls}" style="cursor:pointer;" data-ckpi="${i}"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>`
+  ).join('');
+  if(hasCompare) document.querySelectorAll('#compareKpis [data-ckpi]').forEach(el=>{
+    const k = kpiDefs[Number(el.dataset.ckpi)];
+    el.addEventListener('click', ()=>{
+      if(!k.ids.length || !k.snap) return;
+      const idSet = new Set(k.ids);
+      const drows = k.snap.rows.filter(r=> idSet.has(String(r[CORE_FIELDS.id]||'').trim()));
+      openDrill(`${k.label} — ${drows.length} DMR${drows.length===1?'':'s'}`, `reference ${escapeHtml(ref.dateLabel)} → current ${escapeHtml(cur.dateLabel)}`, drows);
+    });
+  });
+
+  const filteredEvents = events.filter(ev=>{
+    const f = App.filters;
+    if(f.customer.size && !f.customer.has(String(ev.customer||'').trim())) return false;
+    if(f.defectPN && !String(ev.pn||'').toUpperCase().includes(f.defectPN.toUpperCase())) return false;
+    return true;
+  });
+
+  // matrix — click a cell to drill the exact DMRs behind that transition
+  const stations = new Set();
+  Object.entries(transitions).forEach(([from,to])=>{ stations.add(from); Object.keys(to).forEach(t=>stations.add(t)); });
+  const stArr = Array.from(stations).sort();
+  let html = '<thead><tr><th>from \\ to</th>' + stArr.map(s=>`<th>${escapeHtml(s)}</th>`).join('') + '<th>Total</th></tr></thead><tbody>';
+  const colTotals = stArr.map(()=>0);
+  let grandTotal = 0;
+  stArr.forEach(from=>{
+    html += `<tr><td style="font-weight:600;color:var(--text-dim);">${escapeHtml(from)}</td>`;
+    let rowTotal = 0;
+    stArr.forEach((to,ci)=>{
+      const v = (transitions[from] && transitions[from][to]) || 0;
+      rowTotal += v; colTotals[ci] += v; grandTotal += v;
+      html += `<td class="${v?'clickable-row':''}" data-from="${escapeAttr(from)}" data-to="${escapeAttr(to)}" style="text-align:center;${v? 'color:var(--amber);font-weight:600;':'color:var(--text-faint);'}">${v||'·'}</td>`;
+    });
+    html += `<td style="text-align:center;font-weight:700;color:var(--text);background:rgba(255,255,255,.02);">${rowTotal}</td></tr>`;
+  });
+  if(stArr.length){
+    html += `<tr style="border-top:2px solid var(--border);"><td style="font-weight:700;">Total</td>` +
+      colTotals.map(v=>`<td style="text-align:center;font-weight:700;color:var(--text);background:rgba(255,255,255,.02);">${v}</td>`).join('') +
+      `<td style="text-align:center;font-weight:700;color:var(--amber);background:rgba(240,169,66,.08);">${grandTotal}</td></tr>`;
+  }
+  html += '</tbody>';
+  const matrixTable = document.getElementById('transitionMatrix');
+  matrixTable.innerHTML = stArr.length ? html : '<tbody><tr><td style="padding:20px;color:var(--text-faint);">No station changes between the reference and current report (or fewer than two reports uploaded).</td></tr></tbody>';
+  matrixTable.querySelectorAll('td[data-from]').forEach(td=>{
+    td.addEventListener('click', ()=>{
+      const from = td.dataset.from, to = td.dataset.to;
+      const ids = events.filter(ev=>ev.from===from && ev.to===to).map(ev=>ev.dmrId);
+      if(!ids.length || !cur) return;
+      const idSet = new Set(ids);
+      const drows = cur.rows.filter(r=> idSet.has(String(r[CORE_FIELDS.id]||'').trim()));
+      openDrill(`${from} → ${to}`, `${drows.length} units moved · current report ${escapeHtml(cur.dateLabel)}`, drows);
+    });
+  });
+
+  // top transitions chart — click a bar for the same drill as the matching matrix cell
+  const flat = [];
+  Object.entries(transitions).forEach(([from,to])=> Object.entries(to).forEach(([t,c])=> flat.push({from, to:t, label:`${from} → ${t}`, c})));
+  flat.sort((a,b)=>b.c-a.c);
+  const top = flat.slice(0,10);
+  // Two-line labels (Chart.js renders an array as multiple lines) so long station names
+  // get room to breathe instead of being squeezed onto one line and clipped.
+  drawBarChart('chartTopTransitions', top.map(t=>[t.from, '→ '+t.to]), [{label:'Units moved', data: top.map(t=>t.c), color:getCss('--amber')}], true,
+    idx=>{
+      const t = top[idx];
+      if(!t || !cur) return;
+      const ids = events.filter(ev=>ev.from===t.from && ev.to===t.to).map(ev=>ev.dmrId);
+      const idSet = new Set(ids);
+      const drows = cur.rows.filter(r=> idSet.has(String(r[CORE_FIELDS.id]||'').trim()));
+      openDrill(`${t.from} → ${t.to}`, `${drows.length} units moved · current report ${escapeHtml(cur.dateLabel)}`, drows);
+    });
+
+  // movement log table
+  renderMovementTable(filteredEvents);
+}
+
+function renderMovementTable(events, searchTerm){
+  const term = (searchTerm||document.getElementById('movementSearch').value||'').toUpperCase();
+  let rows = events;
+  if(term) rows = rows.filter(ev => [ev.dmrId, ev.pn, ev.customer, ev.from, ev.to].some(v=>String(v||'').toUpperCase().includes(term)));
+  rows = [...rows].sort((a,b)=> a.dmrId.localeCompare(b.dmrId));
+
+  const pageSize = 50;
+  const page = App.page.movement;
+  const totalPages = Math.max(1, Math.ceil(rows.length/pageSize));
+  const clampedPage = Math.min(page, totalPages);
+  const slice = rows.slice((clampedPage-1)*pageSize, clampedPage*pageSize);
+
+  let html = `<thead><tr><th>DMR ID</th><th>Customer</th><th>Defect PN</th><th>From (reference)</th><th>To (current)</th></tr></thead><tbody>`;
+  slice.forEach(ev=>{
+    html += `<tr><td style="font-family:var(--mono)"><span class="dmr-link" data-id="${escapeAttr(ev.dmrId)}">${escapeHtml(ev.dmrId)}</span></td><td>${escapeHtml(ev.customer)}</td><td style="font-family:var(--mono)">${escapeHtml(ev.pn)}</td>
+      <td>${stationBadge(ev.from)}</td><td>${stationBadge(ev.to)}</td></tr>`;
+  });
+  if(!slice.length) html += `<tr><td colspan="5" style="padding:20px;color:var(--text-faint);">No movement matches the current filters.</td></tr>`;
+  html += '</tbody>';
+  const movTable = document.getElementById('movementTable');
+  movTable.innerHTML = html;
+  movTable.querySelectorAll('.dmr-link').forEach(a=> a.addEventListener('click', ()=> openDmrHistory(a.dataset.id)));
+
+  document.getElementById('movementPager').innerHTML = `
+    <button ${clampedPage<=1?'disabled':''} id="movPrev">← prev</button>
+    <span>page ${clampedPage} / ${totalPages} · ${rows.length} events</span>
+    <button ${clampedPage>=totalPages?'disabled':''} id="movNext">next →</button>`;
+  const prevBtn = document.getElementById('movPrev'), nextBtn = document.getElementById('movNext');
+  if(prevBtn) prevBtn.onclick = ()=>{ App.page.movement--; renderMovementTable(events, searchTerm); };
+  if(nextBtn) nextBtn.onclick = ()=>{ App.page.movement++; renderMovementTable(events, searchTerm); };
+}
+document.getElementById('movementSearch').addEventListener('input', e=>{
+  App.page.movement = 1;
+  const {events} = buildMovement();
+  renderMovementTable(events, e.target.value);
+});
+
+function stationBadge(v){
+  const s = String(v||'').trim();
+  if(s===PENDING_LABEL) return `<span class="badge scrap">${escapeHtml(s)}</span>`;
+  if(!s || s==='(blank)') return `<span class="badge neutral">blank</span>`;
+  return `<span class="badge ok">${escapeHtml(s)}</span>`;
+}
+
+/* =========================================================================
+   PN SUMMARY TAB
+   ========================================================================= */
+function renderPnSummary(searchTerm){
+  const snap = getCurrentSnapshot();
+  const rows = filteredRowsOfSnapshot(snap);
+  const term = (searchTerm!==undefined? searchTerm : (document.getElementById('pnSearch').value||'')).toUpperCase();
+
+  const stationsSet = new Set();
+  const pnMap = {}; // pn -> {station: count, __total}
+  rows.forEach(r=>{
+    const pn = String(r[CORE_FIELDS.defectPN]||'').trim() || '(blank)';
+    if(term && !pn.toUpperCase().includes(term)) return;
+    const st = String(r[CORE_FIELDS.curStation]||'').trim() || '(blank)';
+    stationsSet.add(st);
+    pnMap[pn] = pnMap[pn] || {__total:0};
+    pnMap[pn][st] = (pnMap[pn][st]||0)+1;
+    pnMap[pn].__total++;
+  });
+  const stations = Array.from(stationsSet).sort();
+  const pnRows = Object.entries(pnMap).sort((a,b)=> b[1].__total - a[1].__total);
+
+  let html = `<thead><tr><th>Defect PN</th>${stations.map(s=>`<th>${escapeHtml(s)}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+  pnRows.slice(0,500).forEach(([pn, m])=>{
+    html += `<tr><td style="font-family:var(--mono);font-weight:600;">${escapeHtml(pn)}</td>` +
+      stations.map(s=>`<td class="${m[s]?'clickable-row':''}" data-pn="${escapeAttr(pn)}" data-st="${escapeAttr(s)}" style="text-align:center;${m[s]?'color:var(--text)':'color:var(--text-faint)'}">${m[s]||'·'}</td>`).join('') +
+      `<td class="clickable-row" data-pn="${escapeAttr(pn)}" data-st="" style="text-align:center;font-weight:700;color:var(--amber);">${m.__total}</td></tr>`;
+  });
+  if(!pnRows.length) html += `<tr><td colspan="${stations.length+2}" style="padding:20px;color:var(--text-faint);">No rows match.</td></tr>`;
+  if(pnRows.length){
+    const colTotals = stations.map(s=> pnRows.reduce((a,[,m])=>a+(m[s]||0),0));
+    const grandTotal = pnRows.reduce((a,[,m])=>a+m.__total,0);
+    html += `<tr style="border-top:2px solid var(--border);"><td style="font-weight:700;">Total${pnRows.length>500?` (all ${pnRows.length} PNs)`:''}</td>` +
+      colTotals.map(v=>`<td style="text-align:center;font-weight:700;color:var(--text);background:rgba(255,255,255,.02);">${v}</td>`).join('') +
+      `<td style="text-align:center;font-weight:700;color:var(--amber);background:rgba(240,169,66,.08);">${grandTotal}</td></tr>`;
+  }
+  html += '</tbody>';
+  const pivotTable = document.getElementById('pnPivotTable');
+  pivotTable.innerHTML = html;
+  pivotTable.querySelectorAll('td[data-pn]').forEach(td=>{
+    td.addEventListener('click', ()=>{
+      const pn = td.dataset.pn, st = td.dataset.st;
+      const drows = rows.filter(r=>{
+        const rpn = String(r[CORE_FIELDS.defectPN]||'').trim() || '(blank)';
+        if(rpn !== pn) return false;
+        if(st){ const rst = String(r[CORE_FIELDS.curStation]||'').trim() || '(blank)'; if(rst!==st) return false; }
+        return true;
+      });
+      openDrill(`Defect PN = ${pn}${st?` · Cur Station = ${st}`:''}`, `${drows.length} units`, drows);
+    });
+  });
+
+  App._pnPivotExport = {stations, pnRows};
+
+  // Defect PN × Return Type pivot (parts-level return type analysis)
+  const rtTerm = (document.getElementById('pnRtSearch').value||'').toUpperCase();
+  const rtSet = new Set();
+  const pnRtMap = {}; // pn -> {returnType: rows[]}
+  rows.forEach(r=>{
+    const pn = String(r[CORE_FIELDS.defectPN]||'').trim() || '(blank)';
+    if(rtTerm && !pn.toUpperCase().includes(rtTerm)) return;
+    const rt = String(r[CORE_FIELDS.returnType]||'').trim() || '(blank)';
+    rtSet.add(rt);
+    pnRtMap[pn] = pnRtMap[pn] || {};
+    (pnRtMap[pn][rt] = pnRtMap[pn][rt] || []).push(r);
+  });
+  const rtArr = Array.from(rtSet).sort();
+  const pnRtEntries = Object.entries(pnRtMap).map(([pn,m])=>[pn, m, Object.values(m).reduce((a,arr)=>a+arr.length,0)]).sort((a,b)=>b[2]-a[2]);
+
+  let rtHtml = '<thead><tr><th>Defect PN</th>'+rtArr.map(rt=>`<th>${escapeHtml(rt)}</th>`).join('')+'<th>Total</th></tr></thead><tbody>';
+  pnRtEntries.slice(0,500).forEach(([pn,m,total])=>{
+    rtHtml += `<tr><td style="font-family:var(--mono);font-weight:600;">${escapeHtml(pn)}</td>` +
+      rtArr.map(rt=>{
+        const n = (m[rt]||[]).length;
+        return `<td class="${n?'clickable-row':''}" data-pn2="${escapeAttr(pn)}" data-rt="${escapeAttr(rt)}" style="text-align:center;${n?'color:var(--text)':'color:var(--text-faint)'}">${n||'·'}</td>`;
+      }).join('') + `<td style="text-align:center;font-weight:700;color:var(--amber);">${total}</td></tr>`;
+  });
+  if(!pnRtEntries.length) rtHtml += `<tr><td colspan="${rtArr.length+2}" style="padding:20px;color:var(--text-faint);">No rows match.</td></tr>`;
+  if(pnRtEntries.length){
+    const rtColTotals = rtArr.map(rt=> pnRtEntries.reduce((a,[,m])=>a+(m[rt]||[]).length,0));
+    const rtGrandTotal = pnRtEntries.reduce((a,[,,total])=>a+total,0);
+    rtHtml += `<tr style="border-top:2px solid var(--border);"><td style="font-weight:700;">Total${pnRtEntries.length>500?` (all ${pnRtEntries.length} PNs)`:''}</td>` +
+      rtColTotals.map(v=>`<td style="text-align:center;font-weight:700;color:var(--text);background:rgba(255,255,255,.02);">${v}</td>`).join('') +
+      `<td style="text-align:center;font-weight:700;color:var(--amber);background:rgba(240,169,66,.08);">${rtGrandTotal}</td></tr>`;
+  }
+  rtHtml += '</tbody>';
+  const pnRtTable = document.getElementById('pnReturnTypeTable');
+  pnRtTable.innerHTML = rtHtml;
+  pnRtTable.querySelectorAll('td[data-rt]').forEach(td=>{
+    td.addEventListener('click', ()=>{
+      const pn = td.dataset.pn2, rt = td.dataset.rt;
+      const drows = (pnRtMap[pn] && pnRtMap[pn][rt]) || [];
+      openDrill(`Defect PN = ${pn} · Return Type = ${rt}`, `${drows.length} units`, drows);
+    });
+  });
+  App._pnRtExport = {rtArr, pnRtEntries};
+}
+document.getElementById('pnSearch').addEventListener('input', e=> renderPnSummary(e.target.value));
+document.getElementById('pnRtSearch').addEventListener('input', ()=> renderPnSummary());
+document.getElementById('exportPnBtn').addEventListener('click', ()=>{
+  deferredExport(()=>{
+    const {stations, pnRows} = App._pnPivotExport || {stations:[],pnRows:[]};
+    const header = ['Defect PN', ...stations, 'Total'];
+    const rows = pnRows.map(([pn,m])=> [pn, ...stations.map(s=>m[s]||0), m.__total]);
+    exportAOA('defect_pn_summary', header, rows);
+  });
+});
+document.getElementById('exportPnRtBtn').addEventListener('click', ()=>{
+  deferredExport(()=>{
+    const {rtArr, pnRtEntries} = App._pnRtExport || {rtArr:[],pnRtEntries:[]};
+    const header = ['Defect PN', ...rtArr, 'Total'];
+    const rows = (pnRtEntries||[]).map(([pn,m,total])=> [pn, ...rtArr.map(rt=>(m[rt]||[]).length), total]);
+    exportAOA('defect_pn_by_return_type', header, rows);
+  });
+});
+
+/* =========================================================================
+   CUSTOMER TAB
+   ========================================================================= */
+function renderCustomer(){
+  const snap = getCurrentSnapshot();
+  const rows = filteredRowsOfSnapshot(snap);
+  const mv = buildMovement();
+  const hasCompare = mv.ref && mv.cur && mv.ref.id !== mv.cur.id && mv.cur.id === (snap && snap.id);
+  const custChange = {}; // customer -> {new, cleared, moved}
+  if(hasCompare){
+    const addSet = new Set(mv.addedIds), remSet = new Set(mv.removedIds), movSet = new Set(mv.movedIds);
+    mv.cur.rows.forEach(r=>{
+      const id = String(r[CORE_FIELDS.id]||'').trim();
+      const c = String(r[CORE_FIELDS.customer]||'').trim() || '(blank)';
+      custChange[c] = custChange[c] || {added:0, moved:0};
+      if(addSet.has(id)) custChange[c].added++;
+      if(movSet.has(id)) custChange[c].moved++;
+    });
+    mv.ref.rows.forEach(r=>{
+      const id = String(r[CORE_FIELDS.id]||'').trim();
+      if(!remSet.has(id)) return;
+      const c = String(r[CORE_FIELDS.customer]||'').trim() || '(blank)';
+      custChange[c] = custChange[c] || {added:0, moved:0};
+      custChange[c].removed = (custChange[c].removed||0) + 1;
+    });
+  }
+
+  const byCust = {};
+  rows.forEach(r=>{
+    const c = String(r[CORE_FIELDS.customer]||'').trim() || '(blank)';
+    byCust[c] = byCust[c] || {total:0, scrap:0, reqAging:[], pjAging:[], pnSet:new Set(), modelSet:new Set(), returnTypes:{}, stations:{}};
+    const d = byCust[c];
+    d.total++;
+    const st = String(r[CORE_FIELDS.curStation]||'').trim();
+    d.stations[st] = (d.stations[st]||0)+1;
+    if(st===PENDING_LABEL) d.scrap++;
+    const pn = String(r[CORE_FIELDS.defectPN]||'').trim();
+    if(pn) d.pnSet.add(pn);
+    const model = String(r[CORE_FIELDS.model]||'').trim();
+    if(model) d.modelSet.add(model);
+    const rt = String(r[CORE_FIELDS.returnType]||'').trim() || '(blank)';
+    d.returnTypes[rt] = (d.returnTypes[rt]||0)+1;
+    const ra = Number(r[CORE_FIELDS.reqAging]); if(!isNaN(ra)) d.reqAging.push(ra);
+    const pa = Number(r[CORE_FIELDS.pjAging]); if(!isNaN(pa)) d.pjAging.push(pa);
+  });
+  const entries = Object.entries(byCust).sort((a,b)=>b[1].total-a[1].total);
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+
+  const top = entries.slice(0,15);
+  drawBarChart('chartCustomerVolume', top.map(e=>e[0]), [{label:'DMRs', data: top.map(e=>e[1].total), color:getCss('--blue')}], true,
+    idx=>{
+      const c = top[idx][0];
+      openDrill(`Customer = ${c}`, `${top[idx][1].total} units`, rows.filter(r=>(String(r[CORE_FIELDS.customer]||'').trim()||'(blank)')===c));
+    });
+  drawBarChart('chartCustomerScrap', top.map(e=>e[0]), [{label:'% Pending scrap', data: top.map(e=> e[1].total? Math.round(e[1].scrap/e[1].total*1000)/10 : 0), color:getCss('--red')}], true,
+    idx=>{
+      const c = top[idx][0];
+      openDrill(`Customer = ${c} · Pending scrap`, `${top[idx][1].scrap} units`, rows.filter(r=>(String(r[CORE_FIELDS.customer]||'').trim()||'(blank)')===c && String(r[CORE_FIELDS.curStation]||'').trim()===PENDING_LABEL));
+    });
+
+  document.getElementById('custTableNote').textContent = hasCompare
+    ? `${entries.length} customers · New/Cleared/Moved vs reference ${mv.ref.dateLabel}`
+    : `${entries.length} customers · pick a reference report above to see New/Cleared/Moved`;
+
+  const headCols = ['Customer','Total DMRs','Pending scrap','% scrap','Distinct PNs','Distinct Models','Top Return Type','Avg Req Aging','Avg PJ Aging','Oldest unit (days)','Top station'];
+  if(hasCompare) headCols.push('New','Cleared','Moved');
+  let html = '<thead><tr>'+headCols.map(h=>`<th>${escapeHtml(h)}</th>`).join('')+'</tr></thead><tbody>';
+  entries.forEach(([c,d],i)=>{
+    const topStation = Object.entries(d.stations).sort((a,b)=>b[1]-a[1])[0];
+    const topReturn = Object.entries(d.returnTypes).sort((a,b)=>b[1]-a[1])[0];
+    const avgReq = avg(d.reqAging), avgPj = avg(d.pjAging);
+    const oldest = d.reqAging.length ? arrMax(d.reqAging) : (d.pjAging.length ? arrMax(d.pjAging) : null);
+    const chg = custChange[c] || {added:0, removed:0, moved:0};
+    html += `<tr class="clickable-row" data-cust="${i}"><td style="font-weight:600;">${escapeHtml(c)}</td><td style="font-family:var(--mono)">${d.total}</td>
+      <td style="font-family:var(--mono);color:var(--amber);">${d.scrap}</td>
+      <td style="font-family:var(--mono);">${d.total? Math.round(d.scrap/d.total*100):0}%</td>
+      <td style="font-family:var(--mono);">${d.pnSet.size}</td>
+      <td style="font-family:var(--mono);">${d.modelSet.size}</td>
+      <td>${topReturn? escapeHtml(topReturn[0])+' <span style="color:var(--text-faint);font-size:11px;">×'+topReturn[1]+'</span>':'—'}</td>
+      <td style="font-family:var(--mono);">${avgReq!==null?avgReq.toFixed(1):'—'}</td>
+      <td style="font-family:var(--mono);">${avgPj!==null?avgPj.toFixed(1):'—'}</td>
+      <td style="font-family:var(--mono);${oldest!==null&&oldest>=90?'color:var(--red);font-weight:700;':oldest!==null&&oldest>=30?'color:var(--amber);':''}">${oldest!==null?oldest:'—'}</td>
+      <td>${topStation? stationBadge(topStation[0])+' <span style="color:var(--text-faint);font-size:11px;">×'+topStation[1]+'</span>':'—'}</td>`;
+    if(hasCompare) html += `<td style="font-family:var(--mono);color:var(--red);">${chg.added||0}</td><td style="font-family:var(--mono);color:var(--green);">${chg.removed||0}</td><td style="font-family:var(--mono);color:var(--amber);">${chg.moved||0}</td>`;
+    html += '</tr>';
+  });
+  if(!entries.length) html += `<tr><td colspan="${headCols.length}" style="padding:20px;color:var(--text-faint);">No rows match current filters.</td></tr>`;
+  html += '</tbody>';
+  const custTable = document.getElementById('customerTable');
+  custTable.innerHTML = html;
+  custTable.querySelectorAll('[data-cust]').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const c = entries[Number(tr.dataset.cust)][0];
+      openDrill(`Customer = ${c}`, `${entries[Number(tr.dataset.cust)][1].total} units`, rows.filter(r=>(String(r[CORE_FIELDS.customer]||'').trim()||'(blank)')===c));
+    });
+  });
+  document.getElementById('exportCustBtn').onclick = ()=>{
+    deferredExport(()=>{
+      const exportRows = entries.map(([c,d])=>{
+        const topStation = Object.entries(d.stations).sort((a,b)=>b[1]-a[1])[0];
+        const topReturn = Object.entries(d.returnTypes).sort((a,b)=>b[1]-a[1])[0];
+        const avgReq = avg(d.reqAging), avgPj = avg(d.pjAging);
+        const oldest = d.reqAging.length ? arrMax(d.reqAging) : (d.pjAging.length ? arrMax(d.pjAging) : '');
+        const chg = custChange[c] || {added:0, removed:0, moved:0};
+        const row = [c, d.total, d.scrap, d.total?Math.round(d.scrap/d.total*100):0, d.pnSet.size, d.modelSet.size,
+          topReturn?topReturn[0]:'', avgReq!==null?Math.round(avgReq*10)/10:'', avgPj!==null?Math.round(avgPj*10)/10:'', oldest, topStation?topStation[0]:''];
+        if(hasCompare) row.push(chg.added||0, chg.removed||0, chg.moved||0);
+        return row;
+      });
+      exportAOA('customer_performance', headCols, exportRows);
+    });
+  };
+
+  // Return Type × Customer pivot
+  const rtSet = new Set();
+  const custRt = {}; // customer -> {returnType: rows[]}
+  rows.forEach(r=>{
+    const c = String(r[CORE_FIELDS.customer]||'').trim() || '(blank)';
+    const rt = String(r[CORE_FIELDS.returnType]||'').trim() || '(blank)';
+    rtSet.add(rt);
+    custRt[c] = custRt[c] || {};
+    (custRt[c][rt] = custRt[c][rt] || []).push(r);
+  });
+  const rtArr = Array.from(rtSet).sort();
+  const custOrder = entries.map(e=>e[0]);
+  let rtHtml = '<thead><tr><th>Customer</th>'+rtArr.map(rt=>`<th>${escapeHtml(rt)}</th>`).join('')+'<th>Total</th></tr></thead><tbody>';
+  custOrder.forEach(c=>{
+    const m = custRt[c] || {};
+    const total = Object.values(m).reduce((a,arr)=>a+arr.length,0);
+    rtHtml += `<tr><td style="font-weight:600;">${escapeHtml(c)}</td>` +
+      rtArr.map(rt=>{
+        const n = (m[rt]||[]).length;
+        return `<td class="${n?'clickable-row':''}" data-c="${escapeAttr(c)}" data-rt="${escapeAttr(rt)}" style="text-align:center;${n?'color:var(--text)':'color:var(--text-faint)'}">${n||'·'}</td>`;
+      }).join('') + `<td style="text-align:center;font-weight:700;color:var(--amber);">${total}</td></tr>`;
+  });
+  if(!custOrder.length) rtHtml += `<tr><td colspan="${rtArr.length+2}" style="padding:20px;color:var(--text-faint);">No rows in view.</td></tr>`;
+  rtHtml += '</tbody>';
+  const rtTable = document.getElementById('custReturnTypeTable');
+  rtTable.innerHTML = rtHtml;
+  rtTable.querySelectorAll('td[data-rt]').forEach(td=>{
+    td.addEventListener('click', ()=>{
+      const c = td.dataset.c, rt = td.dataset.rt;
+      const drows = (custRt[c] && custRt[c][rt]) || [];
+      openDrill(`Customer = ${c} · Return Type = ${rt}`, `${drows.length} units`, drows);
+    });
+  });
+}
+
+/* =========================================================================
+   DATA TABLE TAB
+   ========================================================================= */
+/* =========================================================================
+   AGING & STUCK UNITS TAB
+   ========================================================================= */
+function agingField(){
+  const sel = document.getElementById('agingFieldSelect');
+  return sel ? sel.value : CORE_FIELDS.reqAging;
+}
+function renderAging(){
+  const snap = getCurrentSnapshot();
+  const rows = filteredRowsOfSnapshot(snap);
+  const field = agingField();
+  document.getElementById('agingFieldNote').textContent = `based on ${field}, current report, filters applied`;
+
+  const withAging = rows.map(r=>({r, val: Number(r[field])})).filter(x=> !isNaN(x.val));
+
+  // histogram buckets
+  const buckets = [
+    {label:'0–7', test:v=>v<=7},
+    {label:'8–14', test:v=>v>7&&v<=14},
+    {label:'15–30', test:v=>v>14&&v<=30},
+    {label:'31–60', test:v=>v>30&&v<=60},
+    {label:'61–90', test:v=>v>60&&v<=90},
+    {label:'90+', test:v=>v>90}
+  ];
+  const bucketRows = buckets.map(b=>({...b, rows: withAging.filter(x=>b.test(x.val)).map(x=>x.r)}));
+  drawBarChart('chartAging', bucketRows.map(b=>b.label+' days'), [{label:'Units', data: bucketRows.map(b=>b.rows.length), color:getCss('--amber')}], false,
+    idx=>{
+      const b = bucketRows[idx];
+      if(b) openDrill(`${field} in ${b.label} days`, `${b.rows.length} units`, b.rows);
+    });
+
+  // avg aging by customer (top 12 by volume)
+  const byCust = {};
+  withAging.forEach(x=>{
+    const c = String(x.r[CORE_FIELDS.customer]||'').trim() || '(blank)';
+    byCust[c] = byCust[c] || {sum:0, n:0, rows:[]};
+    byCust[c].sum += x.val; byCust[c].n++; byCust[c].rows.push(x.r);
+  });
+  const custAvg = Object.entries(byCust).map(([c,d])=>({c, avg: d.sum/d.n, n:d.n, rows:d.rows}))
+    .sort((a,b)=>b.n-a.n).slice(0,12).sort((a,b)=>b.avg-a.avg);
+  drawBarChart('chartAgingByCustomer', custAvg.map(c=>c.c), [{label:`Avg ${field}`, data: custAvg.map(c=>Math.round(c.avg*10)/10), color:getCss('--blue')}], true,
+    idx=>{
+      const c = custAvg[idx];
+      if(c) openDrill(`${c.c} — avg ${field} ${Math.round(c.avg*10)/10} days`, `${c.rows.length} units with a numeric ${field}`, c.rows);
+    });
+
+  // stuck units table
+  const threshold = Number(document.getElementById('agingThreshold').value) || 0;
+  const stuck = withAging.filter(x=>x.val >= threshold).sort((a,b)=>b.val-a.val);
+  document.getElementById('stuckCount').innerHTML = `<b>${stuck.length}</b> unit${stuck.length===1?'':'s'} ≥ ${threshold} days`;
+
+  let html = `<thead><tr><th>DMR ID</th><th>Customer</th><th>Defect PN</th><th>Cur Station</th><th>Final Disposition</th><th>${escapeHtml(field)}</th></tr></thead><tbody>`;
+  stuck.slice(0,500).forEach(x=>{
+    const r = x.r;
+    html += `<tr><td style="font-family:var(--mono)"><span class="dmr-link" data-id="${escapeAttr(r[CORE_FIELDS.id])}">${escapeHtml(r[CORE_FIELDS.id])}</span></td>
+      <td>${escapeHtml(r[CORE_FIELDS.customer])}</td><td style="font-family:var(--mono)">${escapeHtml(r[CORE_FIELDS.defectPN])}</td>
+      <td>${stationBadge(r[CORE_FIELDS.curStation])}</td><td>${escapeHtml(r[CORE_FIELDS.finalDisposition])}</td>
+      <td style="font-family:var(--mono);font-weight:700;color:${x.val>=90?'var(--red)':x.val>=30?'var(--amber)':'var(--text)'}">${x.val}</td></tr>`;
+  });
+  if(!stuck.length) html += `<tr><td colspan="6" style="padding:20px;color:var(--text-faint);">No units meet this threshold (or ${escapeHtml(field)} isn't populated in this report).</td></tr>`;
+  html += '</tbody>';
+  const stuckTable = document.getElementById('stuckTable');
+  stuckTable.innerHTML = html;
+  stuckTable.querySelectorAll('.dmr-link').forEach(a=> a.addEventListener('click', ev=>{ ev.stopPropagation(); openDmrHistory(a.dataset.id); }));
+}
+document.getElementById('agingFieldSelect').addEventListener('change', renderAging);
+document.getElementById('agingThreshold').addEventListener('input', renderAging);
+
+/* =========================================================================
+   BACKLOG & THROUGHPUT TRACKER
+   ========================================================================= */
+function renderBacklogConfigChips(){
+  const available = fieldOptions(CORE_FIELDS.curStation);
+  const build = (containerId, setKey)=>{
+    const el = document.getElementById(containerId);
+    const set = App.backlog[setKey];
+    el.innerHTML = available.map(st=>
+      `<span class="chip toggle ${set.has(st)?'on':''}" data-st="${escapeAttr(st)}"><span class="chip-name">${escapeHtml(st)}</span></span>`
+    ).join('') || `<span style="color:var(--text-faint);font-size:12px;">No Cur Station values found yet.</span>`;
+    el.querySelectorAll('[data-st]').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        const st = chip.dataset.st;
+        if(set.has(st)) set.delete(st); else set.add(st);
+        renderBacklogConfigChips();
+        renderBacklog();
+      });
+    });
+  };
+  build('cfgNotStarted','notStarted');
+  build('cfgReleased','released');
+  build('cfgRequested','requested');
+}
+
+function computeBacklogAnalysis(){
+  const notStarted = App.backlog.notStarted, released = App.backlog.released, requested = App.backlog.requested;
+  const chron = chronSnapshots();
+  const curSnap = getCurrentSnapshot();
+  const curRows = filteredRowsOfSnapshot(curSnap);
+
+  const backlogRows = curRows.filter(r=> notStarted.has(String(r[CORE_FIELDS.curStation]||'').trim()));
+  const releasedRows = curRows.filter(r=> released.has(String(r[CORE_FIELDS.curStation]||'').trim()));
+  const requestedRows = curRows.filter(r=> requested.has(String(r[CORE_FIELDS.curStation]||'').trim()));
+  const otherRows = curRows.filter(r=>{
+    const st = String(r[CORE_FIELDS.curStation]||'').trim();
+    return !notStarted.has(st) && !released.has(st) && !requested.has(st);
+  });
+
+  // Throughput: walk every consecutive pair of uploaded reports (chronological) and count
+  // DMR IDs whose Cur Station moved from one stage bucket into the next. Each interval is
+  // tagged with the date of the later report (label) and the earlier report (prevLabel), so
+  // both a full-history rate and a rolling recent-window rate can be derived from the same data.
+  let releaseEvents=0, requestEvents=0;
+  const releaseByInterval=[], requestByInterval=[];
+  for(let i=1;i<chron.length;i++){
+    const prevRows = chron[i-1].rows.filter(rowMatchesFilters);
+    const curRows2 = chron[i].rows.filter(rowMatchesFilters);
+    const prevMap = {};
+    prevRows.forEach(r=>{ const id=String(r[CORE_FIELDS.id]||'').trim(); if(id) prevMap[id]=r; });
+    let relCount=0, reqCount=0; const relIds=[], reqIds=[];
+    curRows2.forEach(r=>{
+      const id = String(r[CORE_FIELDS.id]||'').trim();
+      if(!id || !prevMap[id]) return;
+      const prevSt = String(prevMap[id][CORE_FIELDS.curStation]||'').trim();
+      const curSt = String(r[CORE_FIELDS.curStation]||'').trim();
+      if(notStarted.has(prevSt) && released.has(curSt)){ relCount++; relIds.push(id); }
+      if(released.has(prevSt) && requested.has(curSt)){ reqCount++; reqIds.push(id); }
+    });
+    releaseEvents += relCount; requestEvents += reqCount;
+    releaseByInterval.push({label:chron[i].dateLabel, prevLabel:chron[i-1].dateLabel, count:relCount, ids:relIds, snap:chron[i], prevSnap:chron[i-1]});
+    requestByInterval.push({label:chron[i].dateLabel, prevLabel:chron[i-1].dateLabel, count:reqCount, ids:reqIds, snap:chron[i], prevSnap:chron[i-1]});
+  }
+  const includeWeekends = App.backlog.includeWeekends;
+  const todayStr = toDateInput(new Date());
+  const cutoffStr = addDaysToDate(todayStr, -30);
+
+  // Full-history rate: total events / total span across every uploaded report. Uses each
+  // report's data date + time (when set) for fractional-day precision in calendar-day mode.
+  const fullSpan = chron.length>=2 ? spanBetweenSnaps(chron[0], chron[chron.length-1], includeWeekends) : 0;
+  const avgReleasePerDayFull = fullSpan>0 ? releaseEvents/fullSpan : null;
+  const avgRequestPerDayFull = fullSpan>0 ? requestEvents/fullSpan : null;
+
+  // Rolling 30-day rate: only intervals ending in the last 30 days, spanned from the report
+  // just before the window to the most recent report — so it reflects recent pace only.
+  function rollingRate(byInterval){
+    const relevant = byInterval.filter(x=> x.label >= cutoffStr && x.label <= todayStr);
+    if(!relevant.length) return {rate:null, events:0, spanStart:null, spanEnd:null};
+    const spanStart = relevant[0].prevLabel, spanEnd = relevant[relevant.length-1].label;
+    const span = spanBetweenSnaps(relevant[0].prevSnap, relevant[relevant.length-1].snap, includeWeekends);
+    const events = relevant.reduce((a,x)=>a+x.count,0);
+    return { rate: span>0 ? events/span : null, events, spanStart, spanEnd };
+  }
+  const releaseRolling = rollingRate(releaseByInterval);
+  const requestRolling = rollingRate(requestByInterval);
+
+  // Creation rate, both bases: DMRCreate Date, deduped by DMR ID (first-seen value).
+  const createdMap = {};
+  chron.forEach(s=> s.rows.filter(rowMatchesFilters).forEach(r=>{
+    const id = String(r[CORE_FIELDS.id]||'').trim();
+    if(!id || (id in createdMap)) return;
+    const d = dateOnly(r[CORE_FIELDS.createDate]);
+    if(d) createdMap[id] = d;
+  }));
+  const allCreatedDates = Object.values(createdMap);
+  const createdLast30 = allCreatedDates.filter(d=> d>=cutoffStr && d<=todayStr);
+  const createdWindowSpan = includeWeekends ? 30 : Math.max(1, workingDaysBetween(cutoffStr, todayStr));
+  const avgCreatedPerDayRolling = createdLast30.length ? createdLast30.length/createdWindowSpan : (allCreatedDates.length ? 0 : null);
+  let avgCreatedPerDayFull = null;
+  if(allCreatedDates.length){
+    const times = allCreatedDates.map(d=> new Date(d).getTime());
+    const minD = toDateInput(new Date(arrMin(times))), maxD = toDateInput(new Date(arrMax(times)));
+    const span = Math.max(1, effectiveSpan(minD, maxD, includeWeekends));
+    avgCreatedPerDayFull = allCreatedDates.length/span;
+  }
+
+  return { curSnap, chron, backlogRows, releasedRows, requestedRows, otherRows,
+    releaseEvents, requestEvents,
+    avgReleasePerDayFull, avgRequestPerDayFull,
+    fullSpanStart: chron.length>=2 ? chron[0].dateLabel : null, fullSpanEnd: chron.length>=2 ? chron[chron.length-1].dateLabel : null, fullSpan,
+    avgReleasePerDayRolling: releaseRolling.rate, avgRequestPerDayRolling: requestRolling.rate,
+    releaseRollingEvents: releaseRolling.events, requestRollingEvents: requestRolling.events,
+    releaseRollingSpanStart: releaseRolling.spanStart, releaseRollingSpanEnd: releaseRolling.spanEnd,
+    requestRollingSpanStart: requestRolling.spanStart, requestRollingSpanEnd: requestRolling.spanEnd,
+    avgCreatedPerDayRolling, avgCreatedPerDayFull,
+    createdTotal: createdLast30.length, createdTotalAll: allCreatedDates.length,
+    createdMap, releaseByInterval, requestByInterval };
+}
+
+function backlogTargetMessage(backlogCount, avgRate, curSnap, targetDateStr, numReports, basisLabel, inflowRate){
+  if(!curSnap) return `<span style="color:var(--text-faint)">Upload a report first.</span>`;
+  if(backlogCount===0) return `<span style="color:var(--green)">No backlog right now in this stage — nothing to clear.</span>`;
+  if(!targetDateStr) return `<span style="color:var(--text-faint)">Pick a target date above to see the pace you'd need.</span>`;
+  const includeWeekends = App.backlog.includeWeekends;
+  const daysUntil = includeWeekends ? daysBetween(snapTimestamp(curSnap), targetDateStr) : workingDaysBetween(curSnap.dateLabel, targetDateStr);
+  if(daysUntil<=0) return `<span style="color:var(--red)">That date is today or already past${includeWeekends?'':' (or falls only on a weekend)'} — pick a future date.</span>`;
+  const dayWord = includeWeekends ? 'day' : 'work day';
+  const inflow = inflowRate || 0;
+  // Clearing the backlog by the target date means outpacing whatever keeps arriving in the
+  // meantime too — required pace = (backlog ÷ days) PLUS the inflow rate, not just the backlog alone.
+  const requiredRate = (backlogCount/daysUntil) + inflow;
+  let html = `<div>Backlog: <b>${backlogCount}</b> units · <b>${Math.ceil(daysUntil)}</b> ${dayWord}${Math.ceil(daysUntil)===1?'':'s'} until ${escapeHtml(targetDateStr)}</div>`;
+  if(inflow>0) html += `<div style="color:var(--text-faint);font-size:11.5px;margin-top:2px;">assumes ~${inflow.toFixed(2)}/${dayWord} keeps arriving the whole time (${escapeHtml(basisLabel||'')})</div>`;
+  html += `<div style="margin-top:4px;">Required pace: <b style="color:var(--amber)">${requiredRate.toFixed(2)} / ${dayWord}</b></div>`;
+  if(numReports<2 || avgRate===null){
+    html += `<div style="color:var(--text-faint);margin-top:6px;">Upload at least 2 reports (spanning some time) to compare this against your current trend.</div>`;
+  } else if(avgRate<=0){
+    html += `<div style="color:var(--red);margin-top:6px;">No throughput observed in this stage yet (${escapeHtml(basisLabel||'')}) — at the current pace this backlog won't clear.</div>`;
+  } else if(avgRate >= requiredRate){
+    html += `<div style="color:var(--green);margin-top:6px;">On track — current pace of ${avgRate.toFixed(2)}/${dayWord} (${escapeHtml(basisLabel||'')}) already outpaces new arrivals enough to hit the target.</div>`;
+  } else {
+    const gap = requiredRate - avgRate;
+    html += `<div style="color:var(--red);margin-top:6px;">Behind pace — currently averaging ${avgRate.toFixed(2)}/${dayWord} (${escapeHtml(basisLabel||'')}). Increase throughput by <b>${gap.toFixed(2)}/${dayWord}</b> to hit the target.</div>`;
+  }
+  return html;
+}
+
+// Builds a chart series combining the actual backlog level per uploaded report (solid line)
+// with a forward projection from the current point (dashed line), stepped out using the net
+// flow rate. If netRate<=0 ("never clears"), the projection still renders — flat or rising —
+// over a fixed horizon, so a stalled/growing backlog is visible rather than just absent.
+// netRateBand (optional): {low, high} net rates (from ± throughput variance across report
+// intervals) used to draw a shaded "plausible range" band around the central projection,
+// stepped over the SAME time horizon as the central line so all three stay aligned.
+function buildBacklogTrendSeries(chron, curSnap, bucketRowsFn, currentCount, netRate, includeWeekends, netRateBand){
+  const histPoints = chron.map(s=>({id:s.id, label:s.dateLabel, value: bucketRowsFn(s).length, snap:s}));
+  let anchor = histPoints.findIndex(h=>h.id===curSnap.id);
+  if(anchor<0) anchor = histPoints.length-1;
+
+  const steps = 8;
+  const projFuture = [];
+  let horizonDays = 60;
+  if(netRate !== null && histPoints.length){
+    horizonDays = netRate>0 ? Math.min(currentCount/netRate, 3650) : 60;
+    for(let i=1;i<=steps;i++){
+      const t = horizonDays*i/steps;
+      projFuture.push({label: addWorkingDays(curSnap.dateLabel, t, includeWeekends), value: Math.max(0, currentCount-netRate*t)});
+    }
+  }
+  const labels = [...histPoints.map(h=>h.label), ...projFuture.map(p=>p.label)];
+  const actualData = histPoints.map((h,i)=> i<=anchor ? h.value : null);
+  const projectedData = labels.map((_,i)=>{
+    if(i===anchor) return histPoints[anchor] ? histPoints[anchor].value : null;
+    if(i>histPoints.length-1) return projFuture[i-histPoints.length].value;
+    return null;
+  });
+
+  let projectedLowData = null, projectedHighData = null;
+  if(netRateBand && netRate !== null && histPoints.length){
+    // "Low" band = slower clearing (uses the pessimistic net rate); "High" band = faster
+    // clearing (optimistic net rate). Both walk the same time steps as the central line.
+    const buildBandSide = rate => labels.map((_,i)=>{
+      if(i===anchor) return histPoints[anchor] ? histPoints[anchor].value : null;
+      if(i>histPoints.length-1){
+        const t = horizonDays*(i-histPoints.length+1)/steps;
+        return Math.max(0, currentCount - rate*t);
+      }
+      return null;
+    });
+    projectedLowData = buildBandSide(netRateBand.low);
+    projectedHighData = buildBandSide(netRateBand.high);
+  }
+
+  return {labels, actualData, projectedData, projectedLowData, projectedHighData, histPoints, anchor};
+}
+
+// Mean and sample standard deviation of an array of numbers (needs 2+ points for a
+// meaningful spread; returns stdev:0 for a single point, null entirely for zero points).
+function meanStdev(values){
+  if(!values.length) return null;
+  const mean = values.reduce((a,b)=>a+b,0)/values.length;
+  if(values.length===1) return {mean, stdev:0, n:1};
+  const variance = values.reduce((a,v)=>a+(v-mean)*(v-mean),0)/(values.length-1);
+  return {mean, stdev:Math.sqrt(variance), n:values.length};
+}
+// Per-report-interval throughput rate (events ÷ span of that specific interval), used as
+// the raw observations for the variance calculation — one rate per gap between uploads.
+function intervalRates(byInterval, includeWeekends){
+  return byInterval.map(x=>{
+    const span = spanBetweenSnaps(x.prevSnap, x.snap, includeWeekends);
+    return span>0 ? x.count/span : null;
+  }).filter(r=> r!==null);
+}
+
+function renderBacklog(){
+  const a = computeBacklogAnalysis();
+  const {curSnap} = a;
+  if(!curSnap) return;
+
+  const weekendToggle = document.getElementById('includeWeekendsToggle');
+  weekendToggle.checked = App.backlog.includeWeekends;
+  document.getElementById('rateBasisRolling').checked = App.backlog.rateBasis==='rolling';
+  document.getElementById('rateBasisFull').checked = App.backlog.rateBasis==='full';
+
+  const basis = App.backlog.rateBasis;
+  const basisLabel = basis==='rolling' ? 'last 30 days' : 'full history';
+  const createdRate = basis==='rolling' ? a.avgCreatedPerDayRolling : a.avgCreatedPerDayFull;
+  const releaseRate = basis==='rolling' ? a.avgReleasePerDayRolling : a.avgReleasePerDayFull;
+  const requestRate = basis==='rolling' ? a.avgRequestPerDayRolling : a.avgRequestPerDayFull;
+
+  const funnelLabels = ['Not started','QA Released/Received','RMA Requested','Other / further stages'];
+  const funnelSets = [a.backlogRows, a.releasedRows, a.requestedRows, a.otherRows];
+  drawBarChart('chartFunnel', funnelLabels, [{label:'Units', data: funnelSets.map(s=>s.length), color:getCss('--blue')}], true,
+    idx=> openDrill(funnelLabels[idx], `${funnelSets[idx].length} units · current report ${curSnap.dateLabel}`, funnelSets[idx]));
+
+  // pipeline stage mix across every uploaded report, stacked
+  const stageColors = [getCss('--text-faint'), getCss('--teal'), getCss('--amber'), getCss('--blue')];
+  const pipelineByReport = a.chron.map(s=>{
+    const srows = filteredRowsOfSnapshot(s);
+    const buckets = [
+      srows.filter(r=> App.backlog.notStarted.has(String(r[CORE_FIELDS.curStation]||'').trim())),
+      srows.filter(r=> App.backlog.released.has(String(r[CORE_FIELDS.curStation]||'').trim())),
+      srows.filter(r=> App.backlog.requested.has(String(r[CORE_FIELDS.curStation]||'').trim())),
+      srows.filter(r=>{
+        const st = String(r[CORE_FIELDS.curStation]||'').trim();
+        return !App.backlog.notStarted.has(st) && !App.backlog.released.has(st) && !App.backlog.requested.has(st);
+      })
+    ];
+    return {snap:s, buckets};
+  });
+  drawBarChart('chartPipelineTrend', pipelineByReport.map(p=>p.snap.dateLabel),
+    funnelLabels.map((lbl,i)=>({label:lbl, data:pipelineByReport.map(p=>p.buckets[i].length), color:stageColors[i]})),
+    false,
+    (idx, dsIdx)=>{
+      const p = pipelineByReport[idx]; if(!p) return;
+      const bucketRows = p.buckets[dsIdx===undefined?0:dsIdx];
+      openDrill(`${funnelLabels[dsIdx===undefined?0:dsIdx]} — ${p.snap.dateLabel}`, `${bucketRows.length} units · ${p.snap.fileName}`, bucketRows);
+    }, {stacked:true});
+
+  // cycle time: DMRCreate Date -> observed QA Release transition
+  // Build each involved snapshot's id->row map once, so lookups below are O(1) instead of a
+  // linear scan per event (which is what made this slow on large datasets).
+  const cycleEvents = [];
+  const rowMapCache = new Map(); // snap.id -> Map(dmrId -> row)
+  function rowMapFor(snap){
+    let m = rowMapCache.get(snap.id);
+    if(!m){
+      m = new Map();
+      snap.rows.forEach(r=>{ const id=String(r[CORE_FIELDS.id]||'').trim(); if(id) m.set(id, r); });
+      rowMapCache.set(snap.id, m);
+    }
+    return m;
+  }
+  a.releaseByInterval.forEach(x=>{
+    if(!x.ids.length) return;
+    const map = rowMapFor(x.snap);
+    x.ids.forEach(id=>{
+      const created = a.createdMap[id];
+      if(!created) return;
+      const days = daysBetween(created, x.label);
+      if(days<0) return;
+      const row = map.get(id);
+      if(row) cycleEvents.push({id, days, releaseDate:x.label, createDate:created, row});
+    });
+  });
+  const cycleBuckets = [
+    {label:'0–7', test:v=>v<=7}, {label:'8–14', test:v=>v>7&&v<=14}, {label:'15–30', test:v=>v>14&&v<=30},
+    {label:'31–60', test:v=>v>30&&v<=60}, {label:'61–90', test:v=>v>60&&v<=90}, {label:'90+', test:v=>v>90}
+  ].map(b=>({...b, rows: cycleEvents.filter(e=>b.test(e.days)).map(e=>e.row)}));
+  drawBarChart('chartCycleTime', cycleBuckets.map(b=>b.label+' days'), [{label:'DMRs', data:cycleBuckets.map(b=>b.rows.length), color:getCss('--green')}], false,
+    idx=>{
+      const b = cycleBuckets[idx];
+      if(b) openDrill(`Created → QA Released in ${b.label} days`, `${b.rows.length} DMRs`, b.rows);
+    });
+  const cycleDays = cycleEvents.map(e=>e.days).sort((x,y)=>x-y);
+  const cycleAvg = cycleDays.length ? cycleDays.reduce((a,b)=>a+b,0)/cycleDays.length : null;
+  const cycleMedian = cycleDays.length ? (cycleDays.length%2 ? cycleDays[(cycleDays.length-1)/2] : (cycleDays[cycleDays.length/2-1]+cycleDays[cycleDays.length/2])/2) : null;
+  document.getElementById('cycleTimeKpis').innerHTML = [
+    {label:'DMRs with observed release', value: cycleEvents.length, cls:''},
+    {label:'Average lead time', value: cycleAvg!==null? cycleAvg.toFixed(1)+' days':'—', cls:''},
+    {label:'Median lead time', value: cycleMedian!==null? cycleMedian.toFixed(1)+' days':'—', cls:''},
+    {label:'Longest observed', value: cycleDays.length? arrMax(cycleDays)+' days':'—', cls: cycleDays.length && arrMax(cycleDays)>=90 ? 'red':''}
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>`).join('');
+
+  const fmtRate = v => v!==null ? v.toFixed(2) : '—';
+  // Makes the coarse "attributed to the later report, span = calendar days between reports"
+  // nature of these rates visible on the tile itself, instead of a bare number.
+  function fmtSnapMoment(dateLabel){
+    const snap = a.chron.find(s=>s.dateLabel===dateLabel);
+    return snap && snap.timeLabel ? `${dateLabel} ${snap.timeLabel}` : dateLabel;
+  }
+  function spanNote(events, spanStart, spanEnd, isRollingTile){
+    if(!spanStart || !spanEnd) return `${events} events`;
+    const days = Math.max(1, Math.round(effectiveSpan(spanStart, spanEnd, App.backlog.includeWeekends)));
+    const dayWord = App.backlog.includeWeekends ? 'day' : 'work day';
+    let note = `${events} events · ${fmtSnapMoment(spanStart)} → ${fmtSnapMoment(spanEnd)} (${days} ${dayWord}${days===1?'':'s'})`;
+    if(isRollingTile && spanStart===a.fullSpanStart && spanEnd===a.fullSpanEnd){
+      note += ' — same window as full history (all reports are within 30 days)';
+    }
+    return note;
+  }
+  const DAYS_CAP = 3650; // ~10 years — beyond this, show "10+ years" rather than a specific (likely meaningless) date
+  // Backlog doesn't sit still while you clear it — new units keep arriving at the same average
+  // pace. So "days to clear" has to use the NET rate (outflow minus inflow), not just outflow
+  // against a frozen pile. If inflow ≥ outflow, the backlog will never clear at this pace, no
+  // matter how long you wait — that has to be surfaced explicitly rather than showing a number.
+  function netClearInfo(backlogCount, outflowRate, inflowRate){
+    if(backlogCount<=0) return {days:0, netRate: (outflowRate||0)-(inflowRate||0), neverClears:false, insufficientData:false};
+    if(outflowRate===null || inflowRate===null) return {days:null, netRate:null, neverClears:false, insufficientData:true};
+    const netRate = outflowRate - inflowRate;
+    if(netRate<=0) return {days:null, netRate, neverClears:true, insufficientData:false};
+    return {days: backlogCount/netRate, netRate, neverClears:false, insufficientData:false};
+  }
+  const dayWordBasis = App.backlog.includeWeekends ? 'day' : 'work day';
+  const fmtDaysToClear = info => {
+    if(info.insufficientData) return {value:'—', sub:'no throughput observed yet'};
+    if(info.neverClears) return {value:'Never', sub:`creating ≥ releasing at this pace — net ${info.netRate>=0?'+':''}${info.netRate.toFixed(2)}/${dayWordBasis} · ${basisLabel}`};
+    if(info.days===0) return {value:0, sub:'no backlog right now'};
+    if(info.days>DAYS_CAP) return {value:'10+ yrs', sub:`net pace of ${info.netRate.toFixed(2)}/${dayWordBasis} would take over 10 years — using ${basisLabel}`};
+    const projected = addWorkingDays(curSnap.dateLabel, info.days, App.backlog.includeWeekends);
+    return {value:Math.ceil(info.days), sub:`≈ ${projected} · net ${info.netRate.toFixed(2)}/${dayWordBasis} (assumes inflow keeps pace too) · using ${basisLabel}`};
+  };
+  // Turns a net-rate variance band into a plain-language day range for the KPI subtext.
+  // "High" net rate clears fastest (best case); "low" net rate clears slowest (worst case) —
+  // if the low end is ≤0, the worst case is "might not clear at all in a slow stretch."
+  const rangeNote = (backlogCount, netRateBand, dayWord) => {
+    if(!netRateBand || backlogCount<=0) return '';
+    const fastDays = netRateBand.high>0 ? backlogCount/netRateBand.high : null;
+    const slowDays = netRateBand.low>0 ? backlogCount/netRateBand.low : null;
+    if(fastDays===null) return ' · range: could stall entirely even in a strong period (highly inconsistent throughput)';
+    const fastR = Math.ceil(Math.min(fastDays,DAYS_CAP));
+    if(slowDays===null) return ` · range: ${fastR}+ ${dayWord}s — a slow stretch like your worst observed interval could stall it entirely`;
+    const slowR = Math.ceil(Math.min(slowDays,DAYS_CAP));
+    return ` · range: ${fastR}–${slowR} ${dayWord}s based on how consistent throughput has been across your uploaded reports`;
+  };
+
+  // --- QA Release backlog ---
+  const relClearInfo = netClearInfo(a.backlogRows.length, releaseRate, createdRate);
+  const relClear = fmtDaysToClear(relClearInfo);
+  // Variance band: how much has the release rate actually swung between report intervals?
+  // Needs at least 2 interval observations (3 reports) to say anything about spread.
+  const releaseRateObs = intervalRates(a.releaseByInterval, App.backlog.includeWeekends);
+  const releaseRateStats = meanStdev(releaseRateObs);
+  const relNetRateBand = (releaseRateStats && releaseRateStats.n>=2 && createdRate!==null) ? {
+    low: Math.max(0, releaseRateStats.mean - releaseRateStats.stdev) - createdRate,
+    high: (releaseRateStats.mean + releaseRateStats.stdev) - createdRate
+  } : null;
+  const relRange = rangeNote(a.backlogRows.length, relNetRateBand, dayWordBasis);
+  document.getElementById('releaseKpis').innerHTML = [
+    {label:'Current backlog (not started)', value:a.backlogRows.length, cls:'amber', sub:curSnap.dateLabel},
+    {label:'DMRs created / day · last 30d', value: fmtRate(a.avgCreatedPerDayRolling), cls:'', sub: `${a.createdTotal} created in last 30 days`},
+    {label:'DMRs created / day · full history', value: fmtRate(a.avgCreatedPerDayFull), cls:'', sub: `${a.createdTotalAll} DMRs total, all reports`},
+    {label:'QA Released / day · last 30d', value: fmtRate(a.avgReleasePerDayRolling), cls:'', sub: spanNote(a.releaseRollingEvents, a.releaseRollingSpanStart, a.releaseRollingSpanEnd, true)},
+    {label:'QA Released / day · full history', value: fmtRate(a.avgReleasePerDayFull), cls:'', sub: spanNote(a.releaseEvents, a.fullSpanStart, a.fullSpanEnd, false)},
+    {label:'Days to clear (net of new arrivals)', value: relClear.value, cls: relClearInfo.neverClears?'red':(relClearInfo.days!==null&&!relClearInfo.insufficientData?'green':''), sub: relClear.sub + relRange}
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub||''}</div></div>`).join('');
+  const relKpiEls = document.querySelectorAll('#releaseKpis .kpi');
+  if(relKpiEls[0]){ relKpiEls[0].style.cursor='pointer'; relKpiEls[0].addEventListener('click', ()=> openDrill('Not started backlog', `${a.backlogRows.length} units`, a.backlogRows)); }
+
+  const relTrend = buildBacklogTrendSeries(a.chron, curSnap,
+    s => filteredRowsOfSnapshot(s).filter(r=> App.backlog.notStarted.has(String(r[CORE_FIELDS.curStation]||'').trim())),
+    a.backlogRows.length, relClearInfo.netRate, App.backlog.includeWeekends, relNetRateBand);
+  const relSeries = [
+    {label:'Actual backlog', data:relTrend.actualData, color:getCss('--blue'), order:1}
+  ];
+  if(relTrend.projectedLowData){
+    relSeries.push({label:'Range (low)', data:relTrend.projectedLowData, color:getCss('--text-faint'), dashed:true, noFill:true, hairline:true, order:3});
+    relSeries.push({label:'Range (high)', data:relTrend.projectedHighData, color:getCss('--text-faint'), dashed:true, hairline:true, fillTo:relSeries.length-1, order:3});
+  }
+  relSeries.push({label:'Projected', data:relTrend.projectedData, color:getCss('--amber'), dashed:true, noFill:true, order:2});
+  drawLineChart('chartReleaseTrend', relTrend.labels, relSeries, idx=>{
+    if(idx>relTrend.anchor) return; // pure projection point — nothing real to drill into
+    const h = relTrend.histPoints[idx]; if(!h) return;
+    const rows = filteredRowsOfSnapshot(h.snap).filter(r=> App.backlog.notStarted.has(String(r[CORE_FIELDS.curStation]||'').trim()));
+    openDrill(`Not started backlog — ${h.label}`, `${rows.length} units · ${h.snap.fileName}`, rows);
+  });
+
+  const relTargetInput = document.getElementById('releaseTargetDate');
+  if(App.backlog.targetRelease && !relTargetInput.value) relTargetInput.value = App.backlog.targetRelease;
+  document.getElementById('releaseTargetResult').innerHTML = backlogTargetMessage(a.backlogRows.length, releaseRate, curSnap, relTargetInput.value, a.chron.length, basisLabel, createdRate);
+
+  // --- RMA Requesting backlog ---
+  const requestBacklogCount = a.releasedRows.length;
+  const reqClearInfo = netClearInfo(requestBacklogCount, requestRate, releaseRate);
+  const reqClear = fmtDaysToClear(reqClearInfo);
+  const requestRateObs = intervalRates(a.requestByInterval, App.backlog.includeWeekends);
+  const requestRateStats = meanStdev(requestRateObs);
+  const reqNetRateBand = (requestRateStats && requestRateStats.n>=2 && releaseRate!==null) ? {
+    low: Math.max(0, requestRateStats.mean - requestRateStats.stdev) - releaseRate,
+    high: (requestRateStats.mean + requestRateStats.stdev) - releaseRate
+  } : null;
+  const reqRange = rangeNote(requestBacklogCount, reqNetRateBand, dayWordBasis);
+  document.getElementById('requestKpis').innerHTML = [
+    {label:'Current requesting backlog', value:requestBacklogCount, cls:'amber', sub:'QA Released, not yet RMA Requested'},
+    {label:'QA Released / day · last 30d (inflow)', value: fmtRate(a.avgReleasePerDayRolling), cls:'', sub:'feeds into this stage'},
+    {label:'QA Released / day · full history (inflow)', value: fmtRate(a.avgReleasePerDayFull), cls:'', sub:'feeds into this stage'},
+    {label:'RMA Requested / day · last 30d', value: fmtRate(a.avgRequestPerDayRolling), cls:'', sub: spanNote(a.requestRollingEvents, a.requestRollingSpanStart, a.requestRollingSpanEnd, true)},
+    {label:'RMA Requested / day · full history', value: fmtRate(a.avgRequestPerDayFull), cls:'', sub: spanNote(a.requestEvents, a.fullSpanStart, a.fullSpanEnd, false)},
+    {label:'Days to clear (net of new arrivals)', value: reqClear.value, cls: reqClearInfo.neverClears?'red':(reqClearInfo.days!==null&&!reqClearInfo.insufficientData?'green':''), sub: reqClear.sub + reqRange}
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub||''}</div></div>`).join('');
+  const reqKpiEls = document.querySelectorAll('#requestKpis .kpi');
+  if(reqKpiEls[0]){ reqKpiEls[0].style.cursor='pointer'; reqKpiEls[0].addEventListener('click', ()=> openDrill('Requesting backlog', `${requestBacklogCount} units — QA Released, not yet RMA Requested`, a.releasedRows)); }
+
+  const reqTrend = buildBacklogTrendSeries(a.chron, curSnap,
+    s => filteredRowsOfSnapshot(s).filter(r=> App.backlog.released.has(String(r[CORE_FIELDS.curStation]||'').trim())),
+    requestBacklogCount, reqClearInfo.netRate, App.backlog.includeWeekends, reqNetRateBand);
+  const reqSeries = [
+    {label:'Actual backlog', data:reqTrend.actualData, color:getCss('--blue'), order:1}
+  ];
+  if(reqTrend.projectedLowData){
+    reqSeries.push({label:'Range (low)', data:reqTrend.projectedLowData, color:getCss('--text-faint'), dashed:true, noFill:true, hairline:true, order:3});
+    reqSeries.push({label:'Range (high)', data:reqTrend.projectedHighData, color:getCss('--text-faint'), dashed:true, hairline:true, fillTo:reqSeries.length-1, order:3});
+  }
+  reqSeries.push({label:'Projected', data:reqTrend.projectedData, color:getCss('--amber'), dashed:true, noFill:true, order:2});
+  drawLineChart('chartRequestTrend', reqTrend.labels, reqSeries, idx=>{
+    if(idx>reqTrend.anchor) return; // pure projection point — nothing real to drill into
+    const h = reqTrend.histPoints[idx]; if(!h) return;
+    const rows = filteredRowsOfSnapshot(h.snap).filter(r=> App.backlog.released.has(String(r[CORE_FIELDS.curStation]||'').trim()));
+    openDrill(`Requesting backlog — ${h.label}`, `${rows.length} units · ${h.snap.fileName}`, rows);
+  });
+
+  const reqTargetInput = document.getElementById('requestTargetDate');
+  if(App.backlog.targetRequest && !reqTargetInput.value) reqTargetInput.value = App.backlog.targetRequest;
+  document.getElementById('requestTargetResult').innerHTML = backlogTargetMessage(requestBacklogCount, requestRate, curSnap, reqTargetInput.value, a.chron.length, basisLabel, releaseRate);
+}
+document.getElementById('releaseTargetDate').addEventListener('change', e=>{ App.backlog.targetRelease = e.target.value; renderBacklog(); });
+document.getElementById('requestTargetDate').addEventListener('change', e=>{ App.backlog.targetRequest = e.target.value; renderBacklog(); });
+document.getElementById('includeWeekendsToggle').addEventListener('change', e=>{ App.backlog.includeWeekends = e.target.checked; renderBacklog(); });
+document.getElementById('rateBasisRolling').addEventListener('change', e=>{ if(e.target.checked){ App.backlog.rateBasis='rolling'; renderBacklog(); } });
+document.getElementById('rateBasisFull').addEventListener('change', e=>{ if(e.target.checked){ App.backlog.rateBasis='full'; renderBacklog(); } });
+
+function renderDataTable(){
+  const snap = getCurrentSnapshot();
+  let rows = filteredRowsOfSnapshot(snap);
+  const cols = includedFields().filter(c => snap && snap.headers.includes(c));
+  const term = (document.getElementById('dtSearch').value||'').toUpperCase();
+  if(term) rows = rows.filter(r => cols.some(c => String(r[c]||'').toUpperCase().includes(term)));
+
+  const sort = App.sort.datatable;
+  if(sort.col){
+    rows = [...rows].sort((a,b)=>{
+      const av = a[sort.col], bv = b[sort.col];
+      const an = Number(av), bn = Number(bv);
+      let cmp;
+      if(!isNaN(an) && !isNaN(bn) && av!=='' && bv!=='') cmp = an-bn;
+      else cmp = String(av||'').localeCompare(String(bv||''));
+      return cmp*sort.dir;
+    });
+  }
+
+  document.getElementById('dtCount').textContent = rows.length + ' rows · ' + cols.length + ' columns';
+
+  const pageSize = 60;
+  const totalPages = Math.max(1, Math.ceil(rows.length/pageSize));
+  App.page.datatable = Math.min(App.page.datatable, totalPages);
+  const slice = rows.slice((App.page.datatable-1)*pageSize, App.page.datatable*pageSize);
+
+  let html = '<thead><tr>' + cols.map(c=>`<th data-col="${escapeAttr(c)}" class="${sort.col===c?'sorted':''}">${escapeHtml(c)}${sort.col===c?(sort.dir>0?' ▲':' ▼'):''}</th>`).join('') + '</tr></thead><tbody>';
+  slice.forEach(r=>{
+    html += '<tr>' + cols.map(c=>{
+      if(c===CORE_FIELDS.curStation) return `<td>${stationBadge(r[c])}</td>`;
+      if(c===CORE_FIELDS.id) return `<td><span class="dmr-link" data-id="${escapeAttr(r[c])}">${escapeHtml(r[c])}</span></td>`;
+      return `<td>${escapeHtml(r[c])}</td>`;
+    }).join('') + '</tr>';
+  });
+  if(!slice.length) html += `<tr><td colspan="${cols.length||1}" style="padding:20px;color:var(--text-faint);">No rows match.</td></tr>`;
+  html += '</tbody>';
+  const table = document.getElementById('dataTable');
+  table.innerHTML = html;
+  table.querySelectorAll('.dmr-link').forEach(a=> a.addEventListener('click', ev=>{ ev.stopPropagation(); openDmrHistory(a.dataset.id); }));
+  table.querySelectorAll('thead th').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const c = th.dataset.col;
+      if(sort.col===c) sort.dir *= -1; else { sort.col=c; sort.dir=1; }
+      renderDataTable();
+    });
+  });
+
+  document.getElementById('dtPager').innerHTML = `
+    <button ${App.page.datatable<=1?'disabled':''} id="dtPrev">← prev</button>
+    <span>page ${App.page.datatable} / ${totalPages}</span>
+    <button ${App.page.datatable>=totalPages?'disabled':''} id="dtNext">next →</button>`;
+  const p = document.getElementById('dtPrev'), n = document.getElementById('dtNext');
+  if(p) p.onclick = ()=>{ App.page.datatable--; renderDataTable(); };
+  if(n) n.onclick = ()=>{ App.page.datatable++; renderDataTable(); };
+
+  App._dtExport = {cols, rows};
+}
+document.getElementById('dtSearch').addEventListener('input', ()=>{ App.page.datatable=1; renderDataTable(); });
+document.getElementById('exportDtBtn').addEventListener('click', ()=>{
+  deferredExport(()=>{
+    const {cols, rows} = App._dtExport || {cols:[],rows:[]};
+    exportAOA('dmr_data_view', cols, rows.map(r=>cols.map(c=>r[c])));
+  });
+});
+
+/* =========================================================================
+   COLUMN MANAGER
+   ========================================================================= */
+/* =========================================================================
+   DATA QUALITY TAB
+   ========================================================================= */
+function computeQuality(){
+  // Filter-independent, so cache it — otherwise every filter click redoes a full scan of
+  // every row × column across every report for no reason (this was ~500ms wasted per click
+  // on large datasets). Only recompute when the actual data or included columns change.
+  const sig = App.snapshots.map(s=>s.id+':'+s.rows.length).join('|') + '::' + includedFields().join(',');
+  if(App._qualityCache && App._qualityCache.sig===sig) return App._qualityCache.results;
+  const results = App.snapshots.map(s=>{
+    const rows = s.rows;
+    const total = rows.length;
+    const cols = includedFields().filter(c=> s.headers.includes(c));
+    const blankStats = cols.map(c=>{
+      const blanks = rows.filter(r=> String(r[c]==null?'':r[c]).trim()==='').length;
+      return {col:c, blanks, pct: total? Math.round(blanks/total*100):0};
+    }).sort((a,b)=>b.pct-a.pct);
+    const idCounts = {};
+    rows.forEach(r=>{ const id=String(r[CORE_FIELDS.id]||'').trim(); if(!id) return; idCounts[id]=(idCounts[id]||0)+1; });
+    const dupIds = Object.entries(idCounts).filter(([id,c])=>c>1);
+    const dupRows = rows.filter(r=> dupIds.some(([id])=> String(r[CORE_FIELDS.id]||'').trim()===id));
+    return {snap:s, total, blankStats, dupIds, dupRows};
+  });
+  App._qualityCache = {sig, results};
+  return results;
+}
+function renderQuality(){
+  const results = computeQuality();
+  let html = `<thead><tr><th>Report</th><th>Rows</th><th>Worst blank field</th><th>Duplicate DMR IDs</th></tr></thead><tbody>`;
+  results.forEach((r,i)=>{
+    const worst = r.blankStats[0];
+    html += `<tr>
+      <td style="font-weight:600;">${escapeHtml(r.snap.dateLabel)} <span style="color:var(--text-faint);font-size:11px;">· ${escapeHtml(r.snap.fileName)}</span></td>
+      <td style="font-family:var(--mono);">${r.total}</td>
+      <td>${worst && worst.pct>0 ? `${escapeHtml(worst.col)} <span style="color:${worst.pct>=20?'var(--red)':'var(--amber)'};font-family:var(--mono);">${worst.pct}% blank</span>` : `<span style="color:var(--green);">no blanks</span>`}</td>
+      <td>${r.dupIds.length ? `<span class="clickable-row badge scrap" data-dup="${i}" style="cursor:pointer;">${r.dupIds.length} duplicate ID${r.dupIds.length===1?'':'s'}</span>` : `<span class="badge ok">none</span>`}</td>
+    </tr>`;
+  });
+  if(!results.length) html += `<tr><td colspan="4" style="padding:20px;color:var(--text-faint);">No reports uploaded yet.</td></tr>`;
+  html += '</tbody>';
+  const qTable = document.getElementById('qualitySummaryTable');
+  qTable.innerHTML = html;
+  qTable.querySelectorAll('[data-dup]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const r = results[Number(el.dataset.dup)];
+      openDrill(`Duplicate DMR IDs — ${r.snap.fileName}`, `${r.dupIds.length} DMR ID${r.dupIds.length===1?'':'s'} appear more than once in this file`, r.dupRows);
+    });
+  });
+
+  const sel = document.getElementById('qualityReportSelect');
+  const curId = getCurrentSnapshot() ? getCurrentSnapshot().id : null;
+  sel.innerHTML = results.map(r=>`<option value="${r.snap.id}">${escapeHtml(r.snap.dateLabel)} · ${escapeHtml(r.snap.fileName)}</option>`).join('');
+  if(curId) sel.value = curId;
+  const renderBlanksChart = ()=>{
+    const chosen = results.find(r=> r.snap.id===sel.value) || results[0];
+    if(!chosen){ return; }
+    const nonZero = chosen.blankStats.filter(b=>b.pct>0).slice(0,20);
+    drawBarChart('chartBlanks', nonZero.map(b=>b.col), [{label:'% blank', data: nonZero.map(b=>b.pct), color:getCss('--red')}], true,
+      idx=>{
+        const b = nonZero[idx]; if(!b) return;
+        const drows = chosen.snap.rows.filter(r=> String(r[b.col]==null?'':r[b.col]).trim()==='');
+        openDrill(`${b.col} — blank`, `${drows.length} rows in ${chosen.snap.fileName}`, drows);
+      });
+    if(!nonZero.length){ destroyChart('chartBlanks'); }
+  };
+  sel.onchange = renderBlanksChart;
+  renderBlanksChart();
+}
+
+function renderColumns(){
+  const el = document.getElementById('colList');
+  document.getElementById('colCount').textContent = App.schema.length;
+  el.innerHTML = App.schema.map((c,idx)=>`
+    <div class="col-row">
+      <input type="checkbox" data-idx="${idx}" class="colToggle" ${c.included?'checked':''}>
+      <span class="nm">${escapeHtml(c.name)}</span>
+      <button class="btn btn-sm btn-danger" data-idx="${idx}" style="padding:3px 8px;">delete</button>
+    </div>
+  `).join('');
+  el.querySelectorAll('.colToggle').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      App.schema[Number(cb.dataset.idx)].included = cb.checked;
+      renderAll();
+    });
+  });
+  el.querySelectorAll('button.btn-danger').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const removed = App.schema.splice(Number(btn.dataset.idx),1)[0];
+      log(`Deleted column <b>${escapeHtml(removed.name)}</b> from schema.`);
+      renderAll();
+    });
+  });
+}
+document.getElementById('addColBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('newColName');
+  const name = input.value.trim();
+  if(!name) return;
+  if(App.schema.find(c=>c.name===name)){ log(`Column <b>${escapeHtml(name)}</b> already exists.`); return; }
+  App.schema.push({name, included:true});
+  input.value='';
+  log(`Added column <b>${escapeHtml(name)}</b> to schema.`);
+  renderAll();
+});
+
+/* =========================================================================
+   EXPORT ALL CLEANED DATA
+   ========================================================================= */
+// Plain CSV, no Excel formatting/cell overhead at all — the fastest possible export path,
+// useful when a dataset is large enough that even the optimized (dense-mode) Excel writer
+// takes a while. Wrapped the same way as exportAOA: overlay shown, work deferred a tick.
+function exportCSVDirect(filenameBase, header, rows){
+  showOverlay(`Preparing CSV — ${rows.length.toLocaleString()} row${rows.length===1?'':'s'}…`);
+  setTimeout(()=>{
+    try{
+      const lines = [header.map(csvSafe).join(',')];
+      rows.forEach(r=> lines.push(r.map(csvSafe).join(',')));
+      downloadCsv(filenameBase+'.csv', lines.join('\n'));
+    }catch(err){
+      console.error(err);
+      log(`<span style="color:var(--red)">CSV export failed: ${escapeHtml(err.message||String(err))}</span>`);
+    } finally {
+      hideOverlay();
+    }
+  }, 30);
+}
+document.getElementById('exportCleanBtn').addEventListener('click', ()=>{
+  if(!App.snapshots.length){ log('Nothing to export yet — upload a report first.'); return; }
+  deferredExport(()=>{
+    const cols = includedFields();
+    const header = ['Report Date','Report File', ...cols];
+    const rows = [];
+    App.snapshots.forEach(s=> s.rows.forEach(r=>{
+      rows.push([s.dateLabel, s.fileName, ...cols.map(c=>r[c])]);
+    }));
+    exportAOA('dmr_cleaned_all_reports', header, rows);
+    log('Exported all cleaned data across '+App.snapshots.length+' report(s).');
+  });
+});
+document.getElementById('exportCleanCsvBtn').addEventListener('click', ()=>{
+  if(!App.snapshots.length){ log('Nothing to export yet — upload a report first.'); return; }
+  deferredExport(()=>{
+    const cols = includedFields();
+    const header = ['Report Date','Report File', ...cols];
+    const rows = [];
+    App.snapshots.forEach(s=> s.rows.forEach(r=>{
+      rows.push([s.dateLabel, s.fileName, ...cols.map(c=>r[c])]);
+    }));
+    exportCSVDirect('dmr_cleaned_all_reports', header, rows);
+    log('Exported all cleaned data as CSV across '+App.snapshots.length+' report(s) — fastest format for very large exports.');
+  });
+});
+
+// Binary Excel format (.xlsb) — noticeably smaller than .xlsx for large exports, since it
+// stores records in a compact binary form instead of verbose XML. Opt-in only (not the
+// default export), since some systems lack a file association for .xlsb and may prompt to
+// "extract" it like an archive rather than opening it in Excel — worth knowing before picking
+// this over plain .xlsx. Uses the same dense-mode sheet construction as the other exporters.
+function exportXLSBDirect(filenameBase, header, rows){
+  showOverlay(`Preparing .xlsb — ${rows.length.toLocaleString()} row${rows.length===1?'':'s'}${rows.length>20000?' (large exports can take a moment)':''}…`);
+  setTimeout(()=>{
+    try{
+      if(typeof XLSX === 'undefined' || !XLSX.write) throw new Error('Excel writer library not loaded');
+      const aoa = [header, ...rows.map(r=> r.map(v=> v==null ? '' : v))];
+      const ws = XLSX.utils.aoa_to_sheet(aoa, {dense:true});
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Data');
+      const out = XLSX.write(wb, {bookType:'xlsb', type:'array'});
+      downloadBlob(filenameBase+'.xlsb', out, 'application/vnd.ms-excel.sheet.binary.macroEnabled.12');
+    }catch(err){
+      console.error('XLSB export failed:', err);
+      log(`<span style="color:var(--amber)">⚠ .xlsb export failed in this browser (${escapeHtml(err.message||String(err))}) — try the regular Export or CSV button instead. Check the browser console (F12) for details.</span>`);
+    } finally {
+      hideOverlay();
+    }
+  }, 30);
+}
+document.getElementById('exportCleanXlsbBtn').addEventListener('click', ()=>{
+  if(!App.snapshots.length){ log('Nothing to export yet — upload a report first.'); return; }
+  deferredExport(()=>{
+    const cols = includedFields();
+    const header = ['Report Date','Report File', ...cols];
+    const rows = [];
+    App.snapshots.forEach(s=> s.rows.forEach(r=>{
+      rows.push([s.dateLabel, s.fileName, ...cols.map(c=>r[c])]);
+    }));
+    exportXLSBDirect('dmr_cleaned_all_reports', header, rows);
+    log('Exported all cleaned data as .xlsb across '+App.snapshots.length+' report(s) — if it opens as a "compressed folder," open it from within Excel (File → Open) instead of double-clicking.');
+  });
+});
+
+/* =========================================================================
+   UTIL
+   ========================================================================= */
+function escapeHtml(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(v){ return escapeHtml(v).replace(/"/g,'&quot;'); }
+function csvSafe(v){
+  const s = String(v==null?'':v);
+  if(/[",\n]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+function downloadCsv(filename, content){
+  const blob = new Blob([content], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function downloadBlob(filename, data, mime){
+  const blob = new Blob([data], {type: mime || 'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+// Wraps an export button's full handler (row-building + the actual write) so the loading
+// overlay appears BEFORE any work starts — row-building alone can take a second or more on
+// large datasets, and without this the page looks completely frozen during that phase too,
+// before exportAOA's own overlay would ever get a chance to appear.
+function deferredExport(fn){
+  const overlay = document.getElementById('uploadOverlay');
+  if(overlay.style.display==='flex'){
+    log('<span style="color:var(--amber)">An export (or upload) is already in progress — please wait for it to finish before starting another. Clicking export again while the browser is busy stacks another full export on top and makes things slower, not faster.</span>');
+    return;
+  }
+  showOverlay('Preparing export…');
+  setTimeout(()=>{
+    try{ fn(); }
+    catch(err){
+      console.error(err);
+      log(`<span style="color:var(--red)">Export failed: ${escapeHtml(err.message||String(err))}</span>`);
+      hideOverlay();
+    }
+  }, 30);
+}
+/* Writes a real Excel workbook (.xlsx) using the same SheetJS build that reads uploads.
+   .xlsx rather than .xlsb on purpose: .xlsb is a ZIP container internally (just like .xlsx,
+   with binary parts instead of XML), and on systems without a specific file association for
+   .xlsb, the OS can mistake it for a generic ZIP archive and offer to "extract" it instead of
+   opening it in Excel. .xlsx has universal, unambiguous file-type recognition everywhere, so
+   it's the safer default. Does NOT auto-fall-back to .csv on failure — if the writer fails,
+   this reports the error and downloads nothing, rather than silently handing back a different
+   file format than what was asked for. Use the CSV button explicitly if that's what you want.
+   The actual write is synchronous and can take a while on large exports, so we show a
+   loading overlay and defer the work a tick — otherwise the page just looks frozen with
+   no feedback while it's working. */
+function exportAOA(filenameBase, header, rows){
+  showOverlay(`Preparing export — ${rows.length.toLocaleString()} row${rows.length===1?'':'s'}${rows.length>20000?' (large exports can take a moment)':''}…`);
+  setTimeout(()=>{
+    try{
+      if(typeof XLSX === 'undefined' || !XLSX.write) throw new Error('Excel writer library not loaded');
+      const aoa = [header, ...rows.map(r=> r.map(v=> v==null ? '' : v))];
+      const ws = XLSX.utils.aoa_to_sheet(aoa, {dense:true});
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Data');
+      const out = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+      downloadBlob(filenameBase+'.xlsx', out, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }catch(err){
+      console.error('XLSX export failed:', err);
+      log(`<span style="color:var(--red)">⚠ .xlsx export failed: ${escapeHtml(err.message||String(err))}. Nothing was downloaded — check the browser console (F12) for details, or use the CSV button if you want a fallback format.</span>`);
+    } finally {
+      hideOverlay();
+    }
+  }, 30);
+}
+
+/* drag & drop onto topbar (optional convenience) */
+['dragover','drop'].forEach(evt=>{
+  document.addEventListener(evt, e=>{ e.preventDefault(); });
+});
+document.addEventListener('drop', e=>{
+  if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){
+    handleFiles(e.dataTransfer.files);
+  }
+});
+
+/* init */
+renderAll();
+</script>
+</body>
+</html>
